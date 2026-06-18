@@ -1,0 +1,17 @@
+Help me spec a variant of https://appworld.dev/
+
+That focuses on building a realistic RLE for a Shopify store automation system
+
+The agent being evaluated should be the merchant or store manager (inspired by: https://andonlabs.com/blog/andon-market-launch)
+
+The environment being simulated should be suppliers, logistics, customers with complaints, shoppers, browsers, advertising venues, etc.
+
+Coverage of key high traffic and usage end points of the Shopify GraphQL api is what matters and the ability to customize training and hill climbing of the agent based on interesting synthetic data and training which can use public datasets and eventually information from the store 
+
+. Tau2 retail could be another inspiration of a much smaller scale
+
+Main question: what is the world model that makes the RLE valuable for real world performance
+
+Target market is Shopify merchants ai curious but unclear whether agents will be capable or not
+
+
