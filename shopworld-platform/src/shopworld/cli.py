@@ -32,6 +32,13 @@ def hello():
 
 
 @app.command()
+def compare_agents():
+    """Compare bad, mediocre, and excellent agents on the same task."""
+    from shopworld.examples.agent_comparison import main
+    main()
+
+
+@app.command()
 def test(
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Verbose output"),
     path: Optional[Path] = typer.Option(None, "--path", help="Test path to run"),

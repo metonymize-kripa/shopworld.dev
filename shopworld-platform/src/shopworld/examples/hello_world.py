@@ -94,16 +94,21 @@ def main():
     print("\n[Evaluating episode...]")
     result = env.evaluate()
     
-    task_result = result.get('task_completion', {})
+    task_result = result.get('task', {})
     print("\n📊 Results:")
     print(f"   Task success: {'✅ YES' if task_result.get('success') else '❌ NO'}")
-    print(f"   Completion score: {task_result.get('partial_credit', 0)*100:.0f}%")
-    print(f"   Passed checks: {len(task_result.get('passed_checks', []))}")
-    print(f"   Failed checks: {len(task_result.get('failed_checks', []))}")
+    print(f"   Completion score: {task_result.get('completion_score', 0)*100:.0f}%")
+    print(f"   Passed checks: {len(task_result.get('passed', []))}")
+    print(f"   Failed checks: {len(task_result.get('failed', []))}")
     
-    violations = result.get('policy_violations', {})
+    violations = result.get('safety', {}).get('violations', {})
     if violations.get('total', 0) > 0:
         print(f"   ⚠️  Policy violations: {violations['total']}")
+    
+    overall = result.get('overall', {})
+    if overall:
+        print(f"   Overall score: {overall.get('score', 0):.1f}/100")
+        print(f"   Recommendation: {overall.get('recommendation', 'N/A')}")
     
     print("\n" + "=" * 60)
     print("Episode complete!")

@@ -46,11 +46,13 @@ class StoreSeeder:
         location_ids = [loc["id"] for loc in data["locations"]]
         
         # Generate products and variants
+        inv_item_offset = 0
         for i in range(product_count):
-            product, variants, inventory_items = self._generate_product(i, location_ids)
+            product, variants, inventory_items = self._generate_product(i, location_ids, inv_item_offset)
             data["products"].append(product)
             data["product_variants"].extend(variants)
             data["inventory_items"].extend(inventory_items)
+            inv_item_offset += len(inventory_items)
         
         # Generate inventory levels
         for item in data["inventory_items"]:
@@ -98,6 +100,7 @@ class StoreSeeder:
         self,
         index: int,
         location_ids: List[str],
+        inv_item_offset: int = 0,
     ) -> tuple[Dict[str, Any], List[Dict[str, Any]], List[Dict[str, Any]]]:
         """Generate a product with variants."""
         category = self.rng.choice(self.PRODUCT_CATEGORIES)
@@ -142,7 +145,7 @@ class StoreSeeder:
             variants.append(variant)
             
             # Create inventory item
-            inv_item_id = f"gid://shopify/InventoryItem/{len(inventory_items)+100}"
+            inv_item_id = f"gid://shopify/InventoryItem/{inv_item_offset + len(inventory_items) + 100}"
             inventory_item = {
                 "id": inv_item_id,
                 "sku": sku,
