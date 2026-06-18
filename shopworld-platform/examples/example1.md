@@ -1,5 +1,13 @@
 # Example 1: WISMO (Where Is My Order) — Agent Comparison
 
+> **What is WISMO?**
+>
+> WISMO — "Where Is My Order?" — is the most common e-commerce support
+> request: customers asking where their package is, when it will arrive, or
+> what to do if it is delayed. WISMO inquiries account for **25–40% of total
+> inbound support volume** for e-commerce companies, rising to **50–60% during
+> peak periods** such as holiday shopping seasons.
+
 Same task, three agents, very different outcomes. This walkthrough shows how
 ShopWorld distinguishes a **bad**, **mediocre**, and **excellent** agent on a
 single customer-support scenario.

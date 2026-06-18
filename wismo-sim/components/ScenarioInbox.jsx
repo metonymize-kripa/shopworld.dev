@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { WORKFLOW_LEVELS, STEP_TYPES, SCENARIOS } from '../data.js'
+import WismoInfoModal from './WismoInfoModal.jsx'
 
 function StepBar({ steps }) {
   return (
@@ -21,14 +23,35 @@ function StepBar({ steps }) {
 }
 
 export default function ScenarioInbox({ onSelect }) {
+  const [showInfo, setShowInfo] = useState(false)
+
   return (
     <div className="fill">
+      <WismoInfoModal open={showInfo} onClose={() => setShowInfo(false)} />
+
       <div style={{ padding: 'max(20px, env(safe-area-inset-top)) 18px 0' }}>
         <div className="kicker">shopworld.dev</div>
-        <h1 className="display" style={{ fontSize: 'clamp(30px, 9vw, 40px)', marginTop: 6, lineHeight: 1.05 }}>
-          WISMO<br />
-          <span style={{ color: 'var(--mint-deep)' }}>Simulator.</span>
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <h1 className="display" style={{ fontSize: 'clamp(30px, 9vw, 40px)', marginTop: 6, lineHeight: 1.05, flex: 1 }}>
+            WISMO<br />
+            <span style={{ color: 'var(--mint-deep)' }}>Simulator.</span>
+          </h1>
+          <button
+            onClick={() => setShowInfo(true)}
+            className="focus-ring"
+            aria-label="What is WISMO?"
+            title="What is WISMO?"
+            style={{
+              marginTop: 10, width: 30, height: 30, borderRadius: '50%',
+              background: 'var(--cream)', border: '1px solid var(--line)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14,
+              color: 'var(--ink-soft)', flexShrink: 0,
+            }}
+          >
+            ?
+          </button>
+        </div>
         <p style={{ marginTop: 10, fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
           Technical deep-dive into post-purchase support. See the API calls, state transitions, and gaps.
         </p>
