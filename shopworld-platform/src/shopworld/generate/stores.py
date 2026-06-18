@@ -43,7 +43,7 @@ class StoreSeeder:
         
         # Generate locations
         data["locations"] = self._generate_locations(location_count)
-        location_ids = [l["id"] for l in data["locations"]]
+        location_ids = [loc["id"] for loc in data["locations"]]
         
         # Generate products and variants
         for i in range(product_count):

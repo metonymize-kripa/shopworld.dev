@@ -5,7 +5,7 @@ from typing import Optional, List
 from decimal import Decimal
 
 from sqlmodel import SQLModel, Field, Relationship, Column
-from sqlalchemy import String, Numeric, DateTime, JSON, Text, Enum
+from sqlalchemy import Numeric, JSON
 import enum
 
 
@@ -49,8 +49,8 @@ class Product(SQLModel, table=True):
     status: str = Field(default="ACTIVE")  # ACTIVE, ARCHIVED, DRAFT
     
     # Pricing
-    price_range_min: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
-    price_range_max: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
+    price_range_min: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
+    price_range_max: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
     
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -79,9 +79,9 @@ class ProductVariant(SQLModel, table=True):
     option3: Optional[str] = None
     
     # Pricing
-    price: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
-    compare_at_price: Optional[Decimal] = Field(sa_column=Column(Numeric(10, 2), nullable=True))
-    cost: Optional[Decimal] = Field(sa_column=Column(Numeric(10, 2), nullable=True))
+    price: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
+    compare_at_price: Optional[Decimal] = Field(default=None, sa_column=Column(Numeric(10, 2), nullable=True))
+    cost: Optional[Decimal] = Field(default=None, sa_column=Column(Numeric(10, 2), nullable=True))
     
     # Tax
     taxable: bool = Field(default=True)
@@ -194,8 +194,8 @@ class Customer(SQLModel, table=True):
     
     # Metrics
     orders_count: int = Field(default=0)
-    total_spent: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
-    average_order_amount: Optional[Decimal] = Field(sa_column=Column(Numeric(10, 2), nullable=True))
+    total_spent: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
+    average_order_amount: Optional[Decimal] = Field(default=None, sa_column=Column(Numeric(10, 2), nullable=True))
     
     # Tags and notes
     tags: List[str] = Field(default_factory=list, sa_column=Column(JSON))
@@ -236,11 +236,11 @@ class Order(SQLModel, table=True):
     cancel_reason: Optional[str] = None
     
     # Financial
-    subtotal_price: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
-    total_tax: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
-    total_shipping: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
-    total_discounts: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
-    total_price: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
+    subtotal_price: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
+    total_tax: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
+    total_shipping: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
+    total_discounts: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
+    total_price: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
     currency_code: str = Field(default="USD")
     
     # Payment
@@ -295,9 +295,9 @@ class OrderLineItem(SQLModel, table=True):
     fulfilled_quantity: int = Field(default=0)
     
     # Pricing
-    price: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
-    discounted_price: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
-    total_discount: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
+    price: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
+    discounted_price: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
+    total_discount: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
     
     # Tax
     taxable: bool = Field(default=True)
@@ -398,7 +398,7 @@ class Refund(SQLModel, table=True):
     order_id: str = Field(foreign_key="orders.id", index=True)
     
     # Amount
-    total_refunded: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
+    total_refunded: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
     
     # Reason
     note: Optional[str] = None
@@ -429,9 +429,9 @@ class RefundLineItem(SQLModel, table=True):
     restock_type: Optional[str] = None  # CANCEL, RETURN, NO_RESTOCK
     
     # Pricing
-    price: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
-    subtotal: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
-    total_tax: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
+    price: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
+    subtotal: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
+    total_tax: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
     
     # Relationships
     refund: Refund = Relationship(back_populates="refund_line_items")
@@ -449,10 +449,10 @@ class DiscountCode(SQLModel, table=True):
     
     # Type
     discount_type: str  # PERCENTAGE, FIXED_AMOUNT
-    value: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
+    value: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(10, 2), default=0))
     
     # Constraints
-    minimum_requirement_amount: Optional[Decimal] = Field(sa_column=Column(Numeric(10, 2), nullable=True))
+    minimum_requirement_amount: Optional[Decimal] = Field(default=None, sa_column=Column(Numeric(10, 2), nullable=True))
     minimum_requirement_quantity: Optional[int] = None
     usage_limit: Optional[int] = None
     applies_once_per_customer: bool = Field(default=False)
@@ -567,7 +567,7 @@ class SupportTicket(SQLModel, table=True):
     # Issue
     subject: str
     description: Optional[str] = None
-    category: str  # ORDER_ISSUE, PRODUCT_QUESTION, RETURN_REQUEST, etc.
+    category: str = Field(default="ORDER_ISSUE")  # ORDER_ISSUE, PRODUCT_QUESTION, RETURN_REQUEST, etc.
     priority: str = Field(default="MEDIUM")  # LOW, MEDIUM, HIGH, URGENT
     
     # Status

@@ -1,7 +1,7 @@
 """Supplier simulator - manages POs, lead times, delays, defects."""
 
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta, UTC
 from enum import Enum

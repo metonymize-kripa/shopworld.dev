@@ -18,16 +18,12 @@ Covers:
 from __future__ import annotations
 
 import pytest
-import pytest_asyncio
 from decimal import Decimal
-from datetime import datetime
 
 from sqlmodel import Session
 
 from shopworld.apps.lib.db import init_database
 from shopworld.apps.shopify_admin.models import (
-    Collection,
-    CollectionProductLink,
     Customer,
     DiscountCode,
     FulfillmentOrder,
@@ -36,7 +32,6 @@ from shopworld.apps.shopify_admin.models import (
     Location,
     Metafield,
     Order,
-    OrderLineItem,
     Product,
     ProductVariant,
 )
@@ -44,7 +39,6 @@ from shopworld.apps.shopify_admin.graphql_api.pagination import (
     encode_cursor,
     decode_cursor,
     paginate,
-    PageInfo,
 )
 from shopworld.apps.shopify_admin.graphql_api.cost import (
     ThrottleState,
@@ -59,7 +53,6 @@ from shopworld.apps.shopify_admin.graphql_api.scopes import (
     Scope,
 )
 from shopworld.apps.shopify_admin.graphql_api.schema import (
-    build_schema,
     ShopWorldGraphQLV2,
 )
 
@@ -261,8 +254,6 @@ class TestPagination:
             decode_cursor("not-valid-base64!!!")
 
     def test_paginate_first_page(self):
-        items = list(range(20))
-
         class Obj:
             def __init__(self, id): self.id = id
 
@@ -499,7 +490,7 @@ class TestQueryProductVariants:
         seed_variant(session, p.id, "10")
         seed_variant(session, p.id, "11")
         result = await gql.execute(
-            f'{{ productVariants(productId: "gid://shopify/Product/10", first: 10) {{ edges {{ node {{ id sku price }} }} }} }}'
+            '{ productVariants(productId: "gid://shopify/Product/10", first: 10) { edges { node { id sku price } } } }'
         )
         assert result["errors"] is None
         edges = result["data"]["productVariants"]["edges"]
@@ -824,7 +815,7 @@ class TestMutationInventory:
         p = seed_product(session, "1")
         v = seed_variant(session, p.id, "1")
         loc = seed_location(session, "1")
-        lvl = seed_inventory_level(session, v.inventory_item_id, loc.id, available=50)
+        seed_inventory_level(session, v.inventory_item_id, loc.id, available=50)
 
         result = await gql.execute(
             f"""

@@ -1,9 +1,7 @@
 """Evaluation engine for grading agent performance."""
 
-import json
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Callable
-from datetime import datetime
+from typing import Any, Dict, List, Callable
 
 from shopworld.common.serialization import state_diff
 

@@ -2,13 +2,14 @@
 
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Callable
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
-from contextlib import contextmanager
 
 from shopworld.common.datetime import SimulatedClock
 from shopworld.common.serialization import StateSnapshot, state_diff
-from shopworld.common.errors import ShopWorldError, SimulationError
+from shopworld.common.errors import ShopWorldError
+from shopworld.apps.lib.db import init_database
+from shopworld.apps.shopify_admin.graphql_api.scopes import check_scope, ScopeError
 
 
 @dataclass
@@ -75,6 +76,20 @@ class ShopWorldEnv:
             done = terminated or truncated
         result = env.evaluate()
     """
+    
+    # Maps tool names to their governing GraphQL operation name (for scope checks)
+    _TOOL_SCOPE_MAP: Dict[str, str] = {
+        "query_orders":       "orders",
+        "query_customers":    "customers",
+        "query_products":     "products",
+        "query_inventory":    "inventoryLevels",
+        "query_fulfillments": "fulfillmentOrders",
+        "update_order":       "orderUpdate",
+        "create_refund":      "refundCreate",
+        "adjust_inventory":   "inventoryAdjustQuantities",
+        "send_message":       "orderUpdate",  # requires write_orders
+        "close_ticket":       "orderUpdate",
+    }
     
     def __init__(
         self,
@@ -250,22 +265,26 @@ class ShopWorldEnv:
         # (implementation depends on serialization format)
     
     def evaluate(self) -> Dict[str, Any]:
-        """Evaluate episode outcome based on final state and trace.
-        
-        Returns evaluation result with task completion, collateral damage,
-        policy violations, and business metrics.
-        """
+        """Evaluate episode outcome using the canonical Evaluator."""
         if not self.task:
             return {"error": "No task defined for evaluation"}
         
+        from shopworld.evaluator import Evaluator
+        
+        initial_state = self.initial_snapshot.database_state if self.initial_snapshot else {}
         final_state = self._get_current_state()
+        
+        evaluator = Evaluator()
+        result = evaluator.evaluate(
+            task=self.task,
+            trace=self.trace,
+            initial_state=initial_state,
+            final_state=final_state,
+        )
         
         return {
             "episode_id": self.episode_id,
-            "task_completion": self.task.evaluate_completion(final_state),
-            "collateral_damage": self._check_collateral_damage(),
-            "policy_violations": self._count_violations(),
-            "business_metrics": self._compute_business_metrics(),
+            **result.to_dict(),
             "api_efficiency": self._compute_api_efficiency(),
             "trace_summary": self._summarize_trace(),
         }
@@ -276,43 +295,58 @@ class ShopWorldEnv:
     
     def _init_database(self, options: Dict[str, Any]) -> None:
         """Initialize SQLite database with commerce schema."""
-        # Placeholder - will be implemented with SQLModel models
-        from shopworld.apps.lib.db import init_database
-        self.db = init_database()
+        db_path = options.get("database", ":memory:")
+        self.db = init_database(db_path)
         
         if self.task and hasattr(self.task, 'initial_db_records'):
             self._load_task_records(self.task.initial_db_records)
     
     def _init_simulators(self, seed: Optional[int]) -> None:
         """Initialize actor simulators."""
-        # Placeholders - will import actual simulator classes
-        self.customer_sim = None  # CustomerSimulator(seed=seed)
-        self.supplier_sim = None  # SupplierSimulator(seed=seed)
-        self.logistics_sim = None  # LogisticsSimulator(seed=seed)
-        self.demand_sim = None  # DemandSimulator(seed=seed)
-        self.ad_sim = None  # AdSimulator(seed=seed)
-        self.policy_supervisor = None  # PolicySupervisor()
+        from shopworld.apps.logistics.simulator import LogisticsSimulator
+        from shopworld.apps.customers.simulator import CustomerSimulator
+        
+        self.logistics_sim = LogisticsSimulator(seed=seed)
+        self.customer_sim = CustomerSimulator(seed=seed)
+        self.supplier_sim = None
+        self.demand_sim = None
+        self.ad_sim = None
+        self.policy_supervisor = None
     
     def _execute_action(self, action: Action) -> None:
         """Execute agent action on the world."""
-        # Route to appropriate app/tool
-        # Track API cost
         cost = self._estimate_api_cost(action)
         self.total_query_cost += cost
         
         if self.total_query_cost > self.query_cost_budget:
             self.terminated = True
+            return
+        
+        if not self.db:
+            return
+        
+        tool = action.tool_name
+        args = action.arguments
+        
+        if tool == "send_message":
+            self._action_send_message(args, action.message)
+        elif tool == "close_ticket":
+            self._action_close_ticket(args)
+        elif tool == "adjust_inventory":
+            self._action_adjust_inventory(args)
+        # query_* tools are read-only; no state change needed
     
     def _check_policy(self, action: Action) -> List[str]:
-        """Check action against granted scopes and merchant policy."""
+        """Check action against granted scopes (via graphql_api scope registry)."""
         violations = []
         
-        # Check scope permissions
-        required_scope = self._get_required_scope(action.tool_name)
-        if required_scope and required_scope not in self.granted_scopes:
-            violations.append(f"SCOPE: Missing {required_scope} for {action.tool_name}")
+        operation = self._get_required_scope(action.tool_name)
+        if operation:
+            try:
+                check_scope(operation, set(self.granted_scopes))
+            except ScopeError as exc:
+                violations.append(f"SCOPE: {exc}")
         
-        # Check policy supervisor
         if self.policy_supervisor:
             policy_violations = self.policy_supervisor.check(action, self._get_current_state())
             violations.extend(policy_violations)
@@ -480,40 +514,94 @@ class ShopWorldEnv:
         )
     
     def _get_current_state(self) -> Dict[str, Any]:
-        """Get serializable representation of current database state."""
-        # Placeholder - will serialize DB records
-        return {}
+        """Get serializable snapshot of core database tables."""
+        if not self.db:
+            return {}
+        
+        from shopworld.apps.shopify_admin.models import (
+            Order, Customer, SupportTicket, SupportMessage, InventoryLevel,
+        )
+        from sqlmodel import select
+        
+        state: Dict[str, Any] = {}
+        with self.db.session() as session:
+            state["orders"] = [
+                {"id": r.id, "name": r.name,
+                 "display_fulfillment_status": r.display_fulfillment_status,
+                 "display_financial_status": r.display_financial_status,
+                 "total_price": float(r.total_price), "customer_id": r.customer_id}
+                for r in session.exec(select(Order)).all()
+            ]
+            state["customers"] = [
+                {"id": r.id, "email": r.email,
+                 "first_name": r.first_name, "last_name": r.last_name}
+                for r in session.exec(select(Customer)).all()
+            ]
+            state["support_tickets"] = [
+                {"id": r.id, "status": r.status, "customer_id": r.customer_id,
+                 "order_id": r.order_id, "subject": r.subject}
+                for r in session.exec(select(SupportTicket)).all()
+            ]
+            state["support_messages"] = [
+                {"id": r.id, "ticket_id": r.ticket_id,
+                 "sender_type": r.sender_type, "body": r.body}
+                for r in session.exec(select(SupportMessage)).all()
+            ]
+            state["inventory_levels"] = [
+                {"inventory_item_id": r.inventory_item_id,
+                 "location_id": r.location_id, "available": r.available}
+                for r in session.exec(select(InventoryLevel)).all()
+            ]
+        return state
     
     def _get_shopify_state(self) -> Dict[str, Any]:
         """Get visible Shopify state for agent observation."""
-        # Placeholder - will query relevant DB tables
-        return {}
+        state = self._get_current_state()
+        return {
+            "orders": state.get("orders", []),
+            "customers": state.get("customers", []),
+            "inventory_levels": state.get("inventory_levels", []),
+        }
     
     def _get_support_state(self) -> Dict[str, Any]:
         """Get support inbox state."""
-        # Placeholder
-        return {"open_tickets": [], "unread_messages": 0}
+        state = self._get_current_state()
+        tickets = state.get("support_tickets", [])
+        open_tickets = [t for t in tickets if t.get("status") == "OPEN"]
+        messages = state.get("support_messages", [])
+        return {
+            "open_tickets": open_tickets,
+            "unread_messages": len([m for m in messages if m.get("sender_type") == "CUSTOMER"]),
+        }
     
     def _get_alerts(self) -> List[Dict[str, Any]]:
-        """Get active alerts for agent."""
-        # Placeholder
-        return []
+        """Get active alerts for agent (low-stock warnings etc.)."""
+        alerts = []
+        state = self._get_current_state()
+        for level in state.get("inventory_levels", []):
+            if level.get("available", 0) <= 0:
+                alerts.append({
+                    "type": "inventory_alert",
+                    "severity": "warning",
+                    "message": f"Out of stock: item {level['inventory_item_id']} at location {level['location_id']}",
+                })
+        return alerts
     
     def _get_available_actions(self) -> List[str]:
-        """Get list of available tools based on granted scopes."""
-        # Placeholder - will filter tools by scope
-        return ["query_orders", "query_customers", "send_message"]
+        """Return tools whose required scope is present in granted_scopes."""
+        granted = set(self.granted_scopes)
+        available = []
+        for tool, operation in self._TOOL_SCOPE_MAP.items():
+            try:
+                check_scope(operation, granted)
+                available.append(tool)
+            except ScopeError:
+                pass
+        return available
     
     def _get_required_scope(self, tool_name: str) -> Optional[str]:
-        """Get required scope for a tool."""
-        scope_map = {
-            "query_orders": "read_orders",
-            "query_customers": "read_customers",
-            "update_order": "write_orders",
-            "create_refund": "write_orders",
-            "adjust_inventory": "write_inventory",
-        }
-        return scope_map.get(tool_name)
+        """Return the GraphQL operation name that governs this tool's scope."""
+        return self._TOOL_SCOPE_MAP.get(tool_name)
     
     def _estimate_api_cost(self, action: Action) -> int:
         """Estimate GraphQL cost points for an action."""
@@ -525,20 +613,147 @@ class ShopWorldEnv:
     
     def _create_support_ticket(self, event: Dict[str, Any]) -> None:
         """Create a support ticket from simulator event."""
-        # Placeholder
-        pass
+        if not self.db:
+            return
+        from shopworld.apps.shopify_admin.models import SupportTicket
+        import uuid as _uuid
+        with self.db.session() as session:
+            ticket = SupportTicket(
+                id=event.get("ticket_id") or f"ticket-{_uuid.uuid4().hex[:8]}",
+                customer_id=event.get("customer_id"),
+                order_id=event.get("order_id"),
+                subject=event.get("subject", "Support request"),
+                description=event.get("description"),
+                category=event.get("category", "ORDER_ISSUE"),
+                priority=event.get("priority", "MEDIUM"),
+                status="OPEN",
+            )
+            session.add(ticket)
+            session.commit()
     
     def _update_fulfillment(self, event: Dict[str, Any]) -> None:
         """Update fulfillment status from logistics event."""
-        # Placeholder
-        pass
+        if not self.db:
+            return
+        from shopworld.apps.shopify_admin.models import Order
+        from sqlmodel import select
+        order_id = event.get("order_id")
+        if not order_id:
+            return
+        with self.db.session() as session:
+            order = session.exec(select(Order).where(Order.id == order_id)).first()
+            if order:
+                event_type = event.get("type")
+                if event_type == "delivered":
+                    order.display_fulfillment_status = "FULFILLED"
+                elif event_type == "delivery_failed":
+                    order.display_fulfillment_status = "PARTIAL"
+                session.add(order)
+                session.commit()
     
     def _create_inventory_alert(self, event: Dict[str, Any]) -> None:
-        """Create inventory alert."""
-        # Placeholder
-        pass
+        """Store inventory alert in hidden state for later retrieval."""
+        self.hidden_state.setdefault("inventory_alerts", []).append(event)
     
-    def _load_task_records(self, records: List[Dict[str, Any]]) -> None:
-        """Load initial DB records from task definition."""
-        # Placeholder
-        pass
+    def _action_send_message(self, args: Dict[str, Any], message: Optional[str]) -> None:
+        """Create a SupportMessage in response to a ticket."""
+        if not self.db or not args.get("ticket_id"):
+            return
+        from shopworld.apps.shopify_admin.models import SupportMessage
+        import uuid as _uuid
+        body = message or args.get("body", "")
+        with self.db.session() as session:
+            msg = SupportMessage(
+                id=f"msg-{_uuid.uuid4().hex[:8]}",
+                ticket_id=args["ticket_id"],
+                sender_type="AGENT",
+                body=body,
+            )
+            session.add(msg)
+            session.commit()
+    
+    def _action_close_ticket(self, args: Dict[str, Any]) -> None:
+        """Set a SupportTicket status to SOLVED."""
+        if not self.db or not args.get("ticket_id"):
+            return
+        from shopworld.apps.shopify_admin.models import SupportTicket
+        from sqlmodel import select
+        with self.db.session() as session:
+            ticket = session.exec(
+                select(SupportTicket).where(SupportTicket.id == args["ticket_id"])
+            ).first()
+            if ticket:
+                ticket.status = "SOLVED"
+                session.add(ticket)
+                session.commit()
+    
+    def _action_adjust_inventory(self, args: Dict[str, Any]) -> None:
+        """Adjust inventory available quantity."""
+        if not self.db:
+            return
+        from shopworld.apps.shopify_admin.models import InventoryLevel
+        from sqlmodel import select
+        item_id = args.get("inventory_item_id")
+        location_id = args.get("location_id")
+        delta = int(args.get("delta", 0))
+        if not item_id or not location_id or delta == 0:
+            return
+        with self.db.session() as session:
+            level = session.exec(
+                select(InventoryLevel).where(
+                    InventoryLevel.inventory_item_id == item_id,
+                    InventoryLevel.location_id == location_id,
+                )
+            ).first()
+            if level:
+                level.available = max(0, level.available + delta)
+                session.add(level)
+                session.commit()
+    
+    def _load_task_records(self, records: Dict[str, List[Dict[str, Any]]]) -> None:
+        """Load initial DB records from task definition into the database."""
+        if not self.db or not records:
+            return
+        
+        from shopworld.apps.shopify_admin.models import (
+            Order, Customer, SupportTicket, InventoryItem, InventoryLevel,
+            Location, Product, ProductVariant,
+        )
+        
+        _model_map = {
+            "orders": Order,
+            "customers": Customer,
+            "support_tickets": SupportTicket,
+            "inventory_items": InventoryItem,
+            "inventory_levels": InventoryLevel,
+            "locations": Location,
+            "products": Product,
+            "product_variants": ProductVariant,
+        }
+        
+        # Insertion order matters for FK constraints
+        _ordered_tables = [
+            "locations", "products", "product_variants",
+            "inventory_items", "inventory_levels",
+            "customers", "orders", "support_tickets",
+        ]
+        
+        with self.db.session() as session:
+            for table in _ordered_tables:
+                model_cls = _model_map.get(table)
+                if model_cls is None or table not in records:
+                    continue
+                for row in records[table]:
+                    obj = model_cls.model_validate(row)
+                    session.add(obj)
+            # Also handle any extra tables not in the ordered list
+            for table, rows in records.items():
+                if table in _ordered_tables:
+                    continue
+                model_cls = _model_map.get(table)
+                if model_cls is None:
+                    continue
+                for row in rows:
+                    obj = model_cls.model_validate(row)
+                    session.add(obj)
+            session.commit()

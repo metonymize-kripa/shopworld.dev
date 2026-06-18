@@ -18,7 +18,6 @@ from strawberry.types import Info
 
 from shopworld.apps.shopify_admin.models import (
     Collection,
-    CollectionProductLink,
     Product,
     ProductVariant,
 )

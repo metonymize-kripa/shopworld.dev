@@ -54,7 +54,6 @@ def schema(
 ):
     """Show database schema."""
     from sqlmodel import SQLModel
-    from shopworld.apps.shopify_admin import models
     
     # Create schema table
     table = Table(title="ShopWorld Database Schema")

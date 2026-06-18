@@ -46,7 +46,7 @@ def main():
     tickets = task.initial_db_records.get('support_tickets', [])
     if tickets:
         ticket = tickets[0]
-        print(f"\n🎫 Active Support Ticket:")
+        print("\n🎫 Active Support Ticket:")
         print(f"   Subject: {ticket['subject']}")
         print(f"   Priority: {ticket['priority']}")
         print(f"   Description: {ticket['description'][:80]}...")
@@ -95,7 +95,7 @@ def main():
     result = env.evaluate()
     
     task_result = result.get('task_completion', {})
-    print(f"\n📊 Results:")
+    print("\n📊 Results:")
     print(f"   Task success: {'✅ YES' if task_result.get('success') else '❌ NO'}")
     print(f"   Completion score: {task_result.get('partial_credit', 0)*100:.0f}%")
     print(f"   Passed checks: {len(task_result.get('passed_checks', []))}")

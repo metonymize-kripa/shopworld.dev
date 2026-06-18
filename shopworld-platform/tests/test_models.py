@@ -2,9 +2,8 @@
 
 import pytest
 from decimal import Decimal
-from datetime import datetime
 
-from sqlmodel import Session, select
+from sqlmodel import select
 
 from shopworld.apps.lib.db import init_database
 from shopworld.apps.shopify_admin.models import (

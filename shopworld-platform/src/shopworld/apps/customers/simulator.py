@@ -1,7 +1,7 @@
 """Customer behavior simulator - generates support tickets and demand."""
 
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta, UTC
 from enum import Enum
@@ -170,7 +170,6 @@ class CustomerSimulator:
         
         # Get trigger conditions from world state
         orders = world_state.get("orders", [])
-        fulfillments = world_state.get("fulfillments", [])
         inventory = world_state.get("inventory", [])
         
         # Generate tickets based on fulfillment issues

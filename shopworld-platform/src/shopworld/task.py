@@ -5,7 +5,6 @@ import random
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Callable
-from datetime import datetime
 
 from shopworld.common.errors import TaskError
 

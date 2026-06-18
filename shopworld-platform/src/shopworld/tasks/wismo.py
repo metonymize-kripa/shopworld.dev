@@ -1,7 +1,6 @@
 """WISMO (Where Is My Order) task - customer asking about delayed shipment."""
 
 from datetime import datetime, timedelta, UTC
-from typing import Any, Dict, List
 
 from shopworld.task import Task
 from shopworld.generate.stores import create_sample_store
@@ -42,8 +41,7 @@ def create_wismo_task(
     
     # Add support ticket for this order
     customer_id = delayed_order.get("customer_id") if delayed_order else None
-    customer = next((c for c in store_data["customers"] if c["id"] == customer_id), None)
-    
+
     ticket = {
         "id": "ticket-wismo-001",
         "customer_id": customer_id,
@@ -69,7 +67,7 @@ def create_wismo_task(
                 "satisfaction": -0.4,
             }
         } if customer_id else {},
-        "expected_tracking_number": f"1Z999888777666",
+        "expected_tracking_number": "1Z999888777666",
         "expected_carrier": "UPS",
     }
     

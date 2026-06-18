@@ -1,9 +1,8 @@
 """State serialization for environment reset/save/load."""
 
-import json
 import pickle
-from dataclasses import dataclass, asdict
-from typing import Any, Dict, Optional
+from dataclasses import dataclass
+from typing import Any, Dict
 from datetime import datetime
 
 

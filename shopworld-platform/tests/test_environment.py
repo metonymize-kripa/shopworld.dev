@@ -1,9 +1,8 @@
 """Tests for ShopWorld environment."""
 
 import pytest
-from datetime import datetime
 
-from shopworld.environment import ShopWorldEnv, Action, Observation
+from shopworld.environment import ShopWorldEnv, Action
 from shopworld.task import Task
 from shopworld.common.errors import ShopWorldError
 

@@ -14,7 +14,7 @@ convention closely enough for simulator purposes.
 from __future__ import annotations
 
 import base64
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Generic, List, Optional, TypeVar
 
 import strawberry

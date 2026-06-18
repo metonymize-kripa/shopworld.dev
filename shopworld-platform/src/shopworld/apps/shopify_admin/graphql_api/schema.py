@@ -22,7 +22,7 @@ import strawberry
 from strawberry import Schema
 from strawberry.types import Info
 
-from shopworld.apps.shopify_admin.graphql_api.cost import ThrottleState, estimate_cost
+from shopworld.apps.shopify_admin.graphql_api.cost import ThrottleState
 from shopworld.apps.shopify_admin.graphql_api.queries.catalog import (
     ProductType, ProductConnection, ProductVariantConnection, CollectionType, CollectionConnection,
     resolve_product, resolve_products, resolve_product_variants,

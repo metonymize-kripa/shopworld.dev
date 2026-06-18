@@ -20,7 +20,6 @@ from strawberry.types import Info
 from shopworld.apps.shopify_admin.models import (
     FulfillmentOrder,
     Order,
-    OrderLineItem,
 )
 from shopworld.apps.shopify_admin.graphql_api.pagination import paginate, PageInfoType, encode_cursor
 from shopworld.apps.shopify_admin.graphql_api.scopes import check_scope

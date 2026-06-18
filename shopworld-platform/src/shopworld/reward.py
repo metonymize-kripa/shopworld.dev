@@ -1,7 +1,7 @@
 """Reward vector computation for multi-objective agent training."""
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
+from dataclasses import dataclass
+from typing import Dict, Optional
 
 
 @dataclass

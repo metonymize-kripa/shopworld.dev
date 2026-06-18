@@ -1,5 +1,14 @@
-"""Simulated Shopify Admin GraphQL API."""
+"""Simulated Shopify Admin GraphQL API.
 
+.. deprecated::
+    This module is superseded by
+    ``shopworld.apps.shopify_admin.graphql_api`` (``build_schema()`` /
+    ``ShopWorldGraphQLV2``).  It is kept only for compatibility while the
+    migration is finalised.  New code must import from ``graphql_api``
+    instead.  This file will be removed in a future release.
+"""
+
+import warnings as _warnings
 from typing import Any, Dict, List, Optional
 from decimal import Decimal
 
@@ -8,8 +17,15 @@ from strawberry.types import Info
 from sqlmodel import Session, select
 
 from shopworld.apps.shopify_admin.models import (
-    Product, ProductVariant, Order, Customer, InventoryLevel,
-    Location, FulfillmentOrder, SupportTicket, Refund,
+    Product, Order, Customer, InventoryLevel,
+    SupportTicket,
+)
+
+_warnings.warn(
+    "shopworld.apps.shopify_admin.graphql is deprecated. "
+    "Use shopworld.apps.shopify_admin.graphql_api (build_schema / ShopWorldGraphQLV2) instead.",
+    DeprecationWarning,
+    stacklevel=2,
 )
 
 
@@ -272,14 +288,14 @@ class Query:
         levels = session.exec(statement).all()
         return [
             InventoryLevelType(
-                id=l.id,
-                inventory_item_id=l.inventory_item_id,
-                location_id=l.location_id,
-                available=l.available,
-                incoming=l.incoming,
-                reserved=l.reserved,
+                id=lvl.id,
+                inventory_item_id=lvl.inventory_item_id,
+                location_id=lvl.location_id,
+                available=lvl.available,
+                incoming=lvl.incoming,
+                reserved=lvl.reserved,
             )
-            for l in levels
+            for lvl in levels
         ]
     
     @strawberry.field

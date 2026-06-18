@@ -161,7 +161,7 @@ def resolve_locations(
 
     stmt = select(Location)
     if not include_legacy:
-        stmt = stmt.where(Location.active == True)
+        stmt = stmt.where(Location.active.is_(True))
     all_locs = session.exec(stmt).all()
 
     page, page_info = paginate(all_locs, first, after, table="locations")

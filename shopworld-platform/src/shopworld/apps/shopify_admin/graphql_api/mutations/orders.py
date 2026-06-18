@@ -16,12 +16,11 @@ from strawberry.types import Info
 
 from shopworld.apps.shopify_admin.models import (
     Fulfillment,
-    FulfillmentOrder,
     Order,
     Refund,
 )
 from shopworld.apps.shopify_admin.graphql_api.scopes import check_scope, ScopeError
-from shopworld.apps.shopify_admin.graphql_api.queries.orders import OrderType, FulfillmentOrderType, _to_order_type, _to_fulfillment_order_type
+from shopworld.apps.shopify_admin.graphql_api.queries.orders import OrderType, _to_order_type
 from shopworld.apps.shopify_admin.graphql_api.mutations.catalog import UserError
 
 
