@@ -424,6 +424,7 @@ function EmailGate({ signedUp, setSignedUp, compact, headline }) {
       })
       const data = await r.json()
       if (!r.ok || !data.ok) { setStatus('error'); setMsg(data.error || 'Something went wrong'); return }
+      if (!data.stored) { setStatus('error'); setMsg('Sign-up unavailable right now — try again later'); return }
       setStatus('done'); setSignedUp(true)
     } catch {
       setStatus('error'); setMsg('Network error — try again')
