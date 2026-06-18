@@ -1,7 +1,7 @@
 // POST /api/signup  { email }
 // Appends the email to a JSON file in Vercel Blob. Zero external DB.
 // Works locally / before setup by no-op'ing gracefully (returns ok:true, stored:false).
-import { put, list, download } from '@vercel/blob'
+import { put, list, get } from '@vercel/blob'
 
 export const config = { runtime: 'nodejs' }
 
@@ -24,8 +24,8 @@ export default async function handler(req, res) {
   const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   if (!valid) return res.status(400).json({ ok: false, error: 'Enter a valid email' })
 
-  // No token configured yet → don't hard-fail the player, just skip storage.
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  // No blob store configured yet → don't hard-fail the player, just skip storage.
+  if (!process.env.BLOB_STORE_ID) {
     return res.status(200).json({ ok: true, stored: false, reason: 'blob-not-configured' })
   }
 
@@ -36,8 +36,10 @@ export default async function handler(req, res) {
       const { blobs } = await list({ prefix: KEY })
       const hit = blobs.find(b => b.pathname === KEY)
       if (hit) {
-        const { blob } = await download(hit.url, { token: process.env.BLOB_READ_WRITE_TOKEN })
-        const text = await blob.text()
+        const result = await get(hit.url, { access: 'private' })
+        const chunks = []
+        for await (const chunk of result.stream) chunks.push(chunk)
+        const text = Buffer.concat(chunks).toString('utf8')
         current = JSON.parse(text)
         if (!Array.isArray(current)) current = []
       }
