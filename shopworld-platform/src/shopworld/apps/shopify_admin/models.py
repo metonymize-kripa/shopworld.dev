@@ -1,6 +1,6 @@
 """SQLModel definitions for Shopify commerce entities."""
 
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, List
 from decimal import Decimal
 
@@ -53,8 +53,8 @@ class Product(SQLModel, table=True):
     price_range_max: Decimal = Field(sa_column=Column(Numeric(10, 2), default=0))
     
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     published_at: Optional[datetime] = None
     
     # Relationships
@@ -96,8 +96,8 @@ class ProductVariant(SQLModel, table=True):
     inventory_item_id: Optional[str] = Field(foreign_key="inventory_items.id", nullable=True)
     
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
     # Relationships
     product: Product = Relationship(back_populates="variants")
@@ -167,7 +167,7 @@ class InventoryLevel(SQLModel, table=True):
     safety_stock: int = Field(default=0)
     quality_control: int = Field(default=0)
     
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
     # Relationships
     inventory_item: InventoryItem = Relationship(back_populates="levels")
@@ -205,8 +205,8 @@ class Customer(SQLModel, table=True):
     default_address_id: Optional[str] = None
     
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
     # Relationships
     orders: List["Order"] = Relationship(back_populates="customer")
@@ -258,8 +258,8 @@ class Order(SQLModel, table=True):
     note: Optional[str] = None
     
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     processed_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
     
@@ -332,8 +332,8 @@ class FulfillmentOrder(SQLModel, table=True):
     # Destination
     destination: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
     # Relationships
     order: Order = Relationship(back_populates="fulfillment_orders")
@@ -361,8 +361,8 @@ class Fulfillment(SQLModel, table=True):
     display_status: Optional[str] = None
     
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     delivered_at: Optional[datetime] = None
     
     # Relationships
@@ -410,7 +410,7 @@ class Refund(SQLModel, table=True):
     # Transactions (simplified)
     transactions: List[dict] = Field(default_factory=list, sa_column=Column(JSON))
     
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
     # Relationships
     order: Order = Relationship(back_populates="refunds")
@@ -466,8 +466,8 @@ class DiscountCode(SQLModel, table=True):
     status: str = Field(default="ACTIVE")  # ACTIVE, EXPIRED, DISABLED
     
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     starts_at: Optional[datetime] = None
     ends_at: Optional[datetime] = None
 
@@ -494,8 +494,8 @@ class Metafield(SQLModel, table=True):
     parent_customer_id: Optional[str] = Field(foreign_key="customers.id", nullable=True)
     parent_order_id: Optional[str] = Field(foreign_key="orders.id", nullable=True)
     
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
     # Relationships
     parent_product: Optional[Product] = Relationship(back_populates="metafields")
@@ -530,8 +530,8 @@ class Collection(SQLModel, table=True):
     seo_description: Optional[str] = None
     
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     published_at: Optional[datetime] = None
     
     # Relationships
@@ -584,8 +584,8 @@ class SupportTicket(SQLModel, table=True):
     # Sentiment (simulated)
     customer_sentiment: float = Field(default=0.0)  # -1 to 1
     
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
     # Relationships
     messages: List["SupportMessage"] = Relationship(back_populates="ticket")
@@ -610,7 +610,7 @@ class SupportMessage(SQLModel, table=True):
     # Metadata
     is_internal: bool = Field(default=False)
     
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
     # Relationships
     ticket: SupportTicket = Relationship(back_populates="messages")

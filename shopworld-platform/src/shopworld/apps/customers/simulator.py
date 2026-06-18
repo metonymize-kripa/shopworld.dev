@@ -3,7 +3,7 @@
 import random
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from enum import Enum
 
 
@@ -459,8 +459,7 @@ class SupportTicketGenerator:
         )
         
         # Calculate order date
-        from datetime import datetime, timedelta
-        order_date = datetime.utcnow() - timedelta(days=days_delayed)
+        order_date = datetime.now(UTC) - timedelta(days=days_delayed)
         
         return {
             "initial_db_records": {

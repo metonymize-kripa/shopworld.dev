@@ -1,6 +1,6 @@
 """WISMO (Where Is My Order) task - customer asking about delayed shipment."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Any, Dict, List
 
 from shopworld.task import Task
@@ -30,7 +30,7 @@ def create_wismo_task(
     for order in store_data["orders"]:
         if order.get("display_fulfillment_status") == "UNFULFILLED":
             # Make it delayed
-            order["created_at"] = datetime.utcnow() - timedelta(days=days_delayed)
+            order["created_at"] = datetime.now(UTC) - timedelta(days=days_delayed)
             delayed_order = order
             break
     
@@ -38,7 +38,7 @@ def create_wismo_task(
     if not delayed_order and store_data["orders"]:
         delayed_order = store_data["orders"][0]
         delayed_order["display_fulfillment_status"] = "UNFULFILLED"
-        delayed_order["created_at"] = datetime.utcnow() - timedelta(days=days_delayed)
+        delayed_order["created_at"] = datetime.now(UTC) - timedelta(days=days_delayed)
     
     # Add support ticket for this order
     customer_id = delayed_order.get("customer_id") if delayed_order else None
@@ -54,8 +54,8 @@ def create_wismo_task(
         "priority": "HIGH" if customer_type == "vip" else "MEDIUM",
         "status": "OPEN",
         "customer_sentiment": -0.4,
-        "created_at": datetime.utcnow() - timedelta(hours=2),
-        "sla_deadline": datetime.utcnow() + timedelta(hours=22),
+        "created_at": datetime.now(UTC) - timedelta(hours=2),
+        "sla_deadline": datetime.now(UTC) + timedelta(hours=22),
     }
     store_data["support_tickets"].append(ticket)
     
