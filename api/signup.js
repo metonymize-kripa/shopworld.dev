@@ -25,26 +25,32 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, stored: false, reason: 'blob-not-configured' })
     }
 
-    // Read existing list (private blob requires auth header)
+    // Read existing list
     let current = []
     try {
+      console.log('[signup] calling list()')
       const { blobs } = await list({ prefix: KEY })
+      console.log('[signup] list() returned', blobs.length, 'blobs')
       const hit = blobs.find(b => b.pathname === KEY)
       if (hit) {
         const blobRes = await fetch(hit.downloadUrl, {
           headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
         })
+        console.log('[signup] fetch existing blob status:', blobRes.status)
         if (blobRes.ok) {
           const parsed = await blobRes.json()
           if (Array.isArray(parsed)) current = parsed
         }
       }
-    } catch { /* no existing file — start fresh */ }
+    } catch (listErr) {
+      console.log('[signup] list/read error:', String(listErr?.message || listErr))
+    }
 
     if (!current.some(e => e.email === email)) {
       current.push({ email, ts: new Date().toISOString() })
     }
 
+    console.log('[signup] calling put(), count:', current.length)
     await put(KEY, JSON.stringify(current, null, 2), {
       access: 'private',
       contentType: 'application/json',
@@ -52,8 +58,10 @@ export default async function handler(req, res) {
       allowOverwrite: true,
     })
 
+    console.log('[signup] put() succeeded')
     return res.status(200).json({ ok: true, stored: true, count: current.length })
   } catch (err) {
+    console.log('[signup] fatal error:', String(err?.message || err))
     return res.status(500).json({ ok: false, error: 'Storage failed', detail: String(err?.message || err) })
   }
 }
