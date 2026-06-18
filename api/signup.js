@@ -33,9 +33,7 @@ export default async function handler(req, res) {
       console.log('[signup] list() returned', blobs.length, 'blobs')
       const hit = blobs.find(b => b.pathname === KEY)
       if (hit) {
-        const blobRes = await fetch(hit.downloadUrl, {
-          headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
-        })
+        const blobRes = await fetch(hit.url)
         console.log('[signup] fetch existing blob status:', blobRes.status)
         if (blobRes.ok) {
           const parsed = await blobRes.json()
@@ -52,7 +50,7 @@ export default async function handler(req, res) {
 
     console.log('[signup] calling put(), count:', current.length)
     await put(KEY, JSON.stringify(current, null, 2), {
-      access: 'private',
+      access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
       allowOverwrite: true,
