@@ -160,3 +160,20 @@ class TestClock:
         obs2, _, _, _, _ = env.step(action)
         
         assert obs2.timestamp > initial_time
+
+
+class TestTaskLoader:
+    """Test task library loading."""
+
+    def test_loads_json_task_library(self):
+        """TaskLoader loads bundled JSON scenarios before lookup."""
+        from shopworld.task import TaskLoader
+
+        loader = TaskLoader()
+        loader.load_all()
+
+        task = loader.get_task("wismo-cooperative-10")
+
+        assert task is not None
+        assert task.domain == "support"
+        assert "read_orders" in task.allowed_scopes
