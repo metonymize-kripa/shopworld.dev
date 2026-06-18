@@ -1,7 +1,7 @@
 // POST /api/signup  { email }
 // Appends the email to a JSON file in Vercel Blob. Zero external DB.
 // Works locally / before setup by no-op'ing gracefully (returns ok:true, stored:false).
-import { put, list } from '@vercel/blob'
+import { put, list, download } from '@vercel/blob'
 
 export const config = { runtime: 'nodejs' }
 
@@ -36,8 +36,9 @@ export default async function handler(req, res) {
       const { blobs } = await list({ prefix: KEY })
       const hit = blobs.find(b => b.pathname === KEY)
       if (hit) {
-        const r = await fetch(hit.url, { cache: 'no-store' })
-        current = await r.json()
+        const { blob } = await download(hit.url, { token: process.env.BLOB_READ_WRITE_TOKEN })
+        const text = await blob.text()
+        current = JSON.parse(text)
         if (!Array.isArray(current)) current = []
       }
     } catch { /* first write */ }
@@ -47,7 +48,7 @@ export default async function handler(req, res) {
     }
 
     await put(KEY, JSON.stringify(current, null, 2), {
-      access: 'public',
+      access: 'private',
       contentType: 'application/json',
       addRandomSuffix: false,
       allowOverwrite: true,
