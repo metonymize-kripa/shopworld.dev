@@ -8,28 +8,35 @@ export const config = { runtime: 'nodejs' }
 const KEY = 'signups.json'
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST')
-    return res.status(405).json({ ok: false, error: 'Method not allowed' })
-  }
-
-  let email = ''
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
-    email = String(body.email || '').trim().toLowerCase()
-  } catch {
-    return res.status(400).json({ ok: false, error: 'Bad JSON' })
-  }
+    if (req.method !== 'POST') {
+      res.setHeader('Allow', 'POST')
+      return res.status(405).json({ ok: false, error: 'Method not allowed' })
+    }
 
-  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  if (!valid) return res.status(400).json({ ok: false, error: 'Enter a valid email' })
+    let email = ''
+    try {
+      let parsedBody = {}
+      if (typeof req.body === 'string') {
+        parsedBody = JSON.parse(req.body || '{}')
+      } else if (Buffer.isBuffer(req.body)) {
+        parsedBody = JSON.parse(req.body.toString() || '{}')
+      } else if (req.body && typeof req.body === 'object') {
+        parsedBody = req.body
+      }
+      email = String(parsedBody.email || '').trim().toLowerCase()
+    } catch (e) {
+      return res.status(400).json({ ok: false, error: 'Bad JSON', detail: String(e?.message || e) })
+    }
 
-  // No blob store configured yet → don't hard-fail the player, just skip storage.
-  if (!process.env.BLOB_STORE_ID) {
-    return res.status(200).json({ ok: true, stored: false, reason: 'blob-not-configured' })
-  }
+    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    if (!valid) return res.status(400).json({ ok: false, error: 'Enter a valid email' })
 
-  try {
+    // No blob store configured yet → don't hard-fail the player, just skip storage.
+    if (!process.env.BLOB_READ_WRITE_TOKEN && !process.env.BLOB_STORE_ID) {
+      return res.status(200).json({ ok: true, stored: false, reason: 'blob-not-configured' })
+    }
+
     // Read existing list (if any)
     let current = []
     try {
@@ -38,7 +45,7 @@ export default async function handler(req, res) {
       if (hit) {
         const result = await get(hit.url, { access: 'private' })
         const chunks = []
-        for await (const chunk of result.stream) chunks.push(chunk)
+        for await (const chunk of result.body) chunks.push(chunk)
         const text = Buffer.concat(chunks).toString('utf8')
         current = JSON.parse(text)
         if (!Array.isArray(current)) current = []
