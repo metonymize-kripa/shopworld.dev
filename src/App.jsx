@@ -209,23 +209,23 @@ function Play({ game, setGame, setScreen }) {
       </div>
 
       {/* Customer card */}
-      <div className={'fill ' + (shake ? 'shake' : '')} style={{ padding: '0 18px', position: 'relative' }}>
+      <div className={shake ? 'shake' : undefined} style={{ padding: '0 18px 12px', position: 'relative' }}>
         <Floaters items={floaters} />
-        <div className="card" style={{ padding: 18, display: 'flex', gap: 14, alignItems: 'center', animation: 'spinIn .3s ease both' }} key={customer.id}>
+        <div className=”card” style={{ padding: 18, display: 'flex', gap: 14, alignItems: 'center', animation: 'spinIn .3s ease both' }} key={customer.id}>
           <div style={{ position: 'relative', display: 'grid', placeItems: 'center' }}>
             <PatienceRing pct={patience / customer.patience} danger={dangerPatience} />
             <div style={{ position: 'absolute', fontSize: 30 }}>{customer.avatar}</div>
           </div>
           <div style={{ flex: 1 }}>
-            <div className="kicker">New order · ≤ ${customer.budget}</div>
-            <p style={{ fontSize: 16, fontWeight: 600, marginTop: 6, lineHeight: 1.3 }}>“{customer.msg}”</p>
+            <div className=”kicker”>New order · ≤ ${customer.budget}</div>
+            <p style={{ fontSize: 16, fontWeight: 600, marginTop: 6, lineHeight: 1.3 }}>”{customer.msg}”</p>
           </div>
         </div>
 
         {/* feedback toast */}
-        <div style={{ height: 44, display: 'grid', placeItems: 'center' }}>
+        <div style={{ height: 40, display: 'grid', placeItems: 'center' }}>
           {feedback && (
-            <div className="pop" style={{
+            <div className=”pop” style={{
               fontFamily: 'var(--display)', fontWeight: 700, fontSize: 15,
               color: feedback.outcome === 'love' ? 'var(--mint-deep)'
                 : feedback.outcome === 'refund' ? 'var(--rose)'
@@ -235,18 +235,17 @@ function Play({ game, setGame, setScreen }) {
             </div>
           )}
         </div>
+      </div>
 
+      {/* Catalog grid — fills remaining space and scrolls */}
+      <div className=”fill scroll” style={{ borderTop: '1px solid var(--line)', padding: '12px 18px max(18px, env(safe-area-inset-bottom))' }}>
         {/* Stock indicator */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div className="kicker">Tap a product to ship</div>
-          <span className="chip" style={{ background: game.stock <= 3 ? '#FFE9E2' : 'var(--cream)', borderColor: game.stock <= 3 ? 'var(--tangerine)' : 'var(--line)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div className=”kicker”>Tap a product to ship</div>
+          <span className=”chip” style={{ background: game.stock <= 3 ? '#FFE9E2' : 'var(--cream)', borderColor: game.stock <= 3 ? 'var(--tangerine)' : 'var(--line)' }}>
             📦 {game.stock} in stock
           </span>
         </div>
-      </div>
-
-      {/* Catalog grid */}
-      <div className="scroll" style={{ padding: '0 18px max(18px, env(safe-area-inset-bottom))' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {CATALOG.map(p => (
             <button key={p.id} className="card focus-ring" onClick={(e) => pick(p, e)}
