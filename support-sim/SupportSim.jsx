@@ -1,7 +1,7 @@
 /**
  * Post-Purchase Support Simulator
- * Shows merchants whether each support scenario has a clean Shopify
- * workflow, requires an app, or devolves into manual chaos.
+ * Shows merchants who handles each step of a support workflow —
+ * and where the gaps are that Shopworld fills.
  */
 
 import React, { useState } from 'react'
@@ -9,16 +9,34 @@ import React, { useState } from 'react'
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const STEP_TYPES = {
-  native:  { label: 'Native',      color: 'var(--mint-deep)',      bg: '#E8F9F4', icon: '✓' },
-  app:     { label: 'Needs app',   color: '#7C5FF5',               bg: '#F0EDFF', icon: '⬡' },
-  manual:  { label: 'Manual',      color: 'var(--tangerine-deep)', bg: '#FFF0E8', icon: '⚙' },
-  chaos:   { label: 'Chaos',       color: 'var(--rose)',           bg: '#FFE9EE', icon: '⚠' },
+  native:  { label: 'Shopify handles it',  color: 'var(--mint-deep)',      bg: '#E8F9F4', icon: '✓' },
+  app:     { label: 'App Store patch',     color: '#7C5FF5',               bg: '#F0EDFF', icon: '⬡' },
+  manual:  { label: 'You handle it',       color: 'var(--tangerine-deep)', bg: '#FFF0E8', icon: '⚙' },
+  chaos:   { label: 'Nobody handles it',   color: 'var(--rose)',           bg: '#FFE9EE', icon: '⚠' },
 }
 
 const VERDICTS = {
-  clean:   { label: 'Clean workflow',    color: 'var(--mint-deep)',      bg: '#E8F9F4', emoji: '✅' },
-  partial: { label: 'Works sometimes',   color: 'var(--tangerine-deep)', bg: '#FFF0E8', emoji: '⚡' },
-  chaos:   { label: 'Expect chaos',      color: 'var(--rose)',           bg: '#FFE9EE', emoji: '🔥' },
+  clean:   {
+    label: 'Shopify covers this',
+    color: 'var(--mint-deep)',
+    bg: '#E8F9F4',
+    emoji: '✅',
+    hook: null,
+  },
+  partial: {
+    label: 'Gaps you\'re patching manually',
+    color: 'var(--tangerine-deep)',
+    bg: '#FFF0E8',
+    emoji: '⚡',
+    hook: 'The manual steps here are where Shopworld saves time per ticket.',
+  },
+  chaos:   {
+    label: 'Nobody owns this — yet',
+    color: 'var(--rose)',
+    bg: '#FFE9EE',
+    emoji: '🔥',
+    hook: 'This is the gap Shopworld fills.',
+  },
 }
 
 const SCENARIOS = [
@@ -42,13 +60,13 @@ const SCENARIOS = [
     title: 'Change shipping address',
     trigger: '"I moved — update my address before it ships?"',
     steps: [
-      { label: 'Find order',                              type: 'native', detail: 'Orders → Search' },
-      { label: 'Edit address (unfulfilled only)',         type: 'native', detail: 'Order → Edit → Shipping address' },
-      { label: 'Reprint label if already generated',     type: 'manual', detail: 'Void + reprint in Shopify Shipping or carrier portal' },
-      { label: 'Contact carrier if package is in transit', type: 'chaos', detail: 'Phone/chat with UPS/FedEx — success rate ~50%' },
+      { label: 'Find order',                                type: 'native', detail: 'Orders → Search' },
+      { label: 'Edit address (unfulfilled only)',           type: 'native', detail: 'Order → Edit → Shipping address' },
+      { label: 'Reprint label if already generated',       type: 'manual', detail: 'Void + reprint in Shopify Shipping or carrier portal' },
+      { label: 'Contact carrier if package is in transit', type: 'chaos',  detail: 'Phone/chat with UPS/FedEx — success rate ~50%' },
     ],
     verdict: 'partial',
-    note: 'Native before fulfillment. After the label prints, you\'re on the phone with the carrier hoping for the best.',
+    note: 'Works before fulfillment. After the label prints, someone has to call the carrier — and that someone is you.',
   },
   {
     id: 'swap',
@@ -63,7 +81,7 @@ const SCENARIOS = [
       { label: 'Handle price difference or discount code', type: 'manual', detail: 'Issue discount via email or draft order' },
     ],
     verdict: 'chaos',
-    note: 'Shopify has no native variant-swap on a paid order. The cleanest path is cancel + new draft order, but that\'s a 5-step manual flow per ticket.',
+    note: 'Shopify has no native variant-swap on a paid order. Cancel + new draft order is the cleanest path — but it\'s a 5-step manual process per ticket.',
   },
   {
     id: 'return',
@@ -71,14 +89,14 @@ const SCENARIOS = [
     title: 'Return item',
     trigger: '"I want to return this — how do I send it back?"',
     steps: [
-      { label: 'Customer requests return',                type: 'manual', detail: 'Via email or contact form — no native portal' },
+      { label: 'Customer requests return',                type: 'manual', detail: 'Via email or contact form — no native self-service portal' },
       { label: 'Generate return shipping label',          type: 'app',    detail: 'Loop Returns, AfterShip, or Shopify basic returns' },
       { label: 'Track return in transit',                 type: 'app',    detail: 'App provides tracking; native Shopify doesn\'t' },
       { label: 'Inspect item on receipt',                 type: 'manual', detail: 'Physical inspection before refunding' },
       { label: 'Issue refund',                            type: 'native', detail: 'Orders → Refund' },
     ],
     verdict: 'partial',
-    note: 'Shopify has basic return support but no self-service customer portal. An app (Loop, AfterShip) eliminates the manual back-and-forth.',
+    note: 'Shopify has basic return support but no self-service portal. Apps patch the label and tracking gap — but intake and inspection are still on you.',
   },
   {
     id: 'refund',
@@ -93,7 +111,7 @@ const SCENARIOS = [
       { label: 'Customer notified',           type: 'native', detail: 'Automatic refund confirmation email' },
     ],
     verdict: 'clean',
-    note: 'Partial refunds are fully native. One of the few post-purchase flows Shopify does cleanly out of the box.',
+    note: 'Partial refunds are fully native — one of the few post-purchase flows Shopify does cleanly out of the box.',
   },
   {
     id: 'damaged',
@@ -101,14 +119,14 @@ const SCENARIOS = [
     title: 'Damaged package',
     trigger: '"My order arrived smashed — I have photos."',
     steps: [
-      { label: 'Customer sends photo evidence',              type: 'manual', detail: 'Email or DM — no native damage reporting' },
-      { label: 'Log incident in order notes',               type: 'native', detail: 'Orders → Add note' },
-      { label: 'Decide: reship or refund',                  type: 'manual', detail: 'Judgment call — policy-dependent' },
-      { label: 'Issue refund or create replacement order',  type: 'native', detail: 'Refund or duplicate order' },
-      { label: 'File carrier claim',                        type: 'manual', detail: 'UPS/FedEx claims portal — 10-20 min per claim' },
+      { label: 'Customer sends photo evidence',             type: 'manual', detail: 'Email or DM — no native damage reporting' },
+      { label: 'Log incident in order notes',              type: 'native', detail: 'Orders → Add note' },
+      { label: 'Decide: reship or refund',                 type: 'manual', detail: 'Judgment call — policy-dependent' },
+      { label: 'Issue refund or create replacement order', type: 'native', detail: 'Refund or duplicate order' },
+      { label: 'File carrier claim',                       type: 'manual', detail: 'UPS/FedEx claims portal — 10–20 min per claim' },
     ],
     verdict: 'partial',
-    note: 'The customer resolution is fine — refund or reship natively. The pain is the carrier claim: manual every time, no Shopify integration.',
+    note: 'Customer resolution is fine — refund or reship natively. The carrier claim is manual every time, with no Shopify integration.',
   },
   {
     id: 'wismo',
@@ -116,14 +134,14 @@ const SCENARIOS = [
     title: 'Late shipment / WISMO',
     trigger: '"I ordered 12 days ago and nothing arrived — where is it?"',
     steps: [
-      { label: 'Look up order and fulfillment',            type: 'native', detail: 'Orders → Fulfillments → Tracking' },
-      { label: 'Check carrier tracking page',              type: 'manual', detail: 'Copy tracking number → carrier site' },
-      { label: 'Contact carrier about delay',              type: 'chaos',  detail: 'Phone/chat — often no resolution' },
-      { label: 'Decide: wait, reship, or refund',          type: 'manual', detail: 'Based on days in transit and carrier SLA' },
-      { label: 'Communicate update to customer',           type: 'manual', detail: 'Manual email — no native delay notification' },
+      { label: 'Look up order and fulfillment',         type: 'native', detail: 'Orders → Fulfillments → Tracking' },
+      { label: 'Check carrier tracking page',           type: 'manual', detail: 'Copy tracking number → carrier site' },
+      { label: 'Contact carrier about delay',           type: 'chaos',  detail: 'Phone/chat — often no resolution' },
+      { label: 'Decide: wait, reship, or refund',       type: 'manual', detail: 'Judgment call based on days in transit and carrier SLA' },
+      { label: 'Communicate update to customer',        type: 'manual', detail: 'Manual email — no native delay notification' },
     ],
     verdict: 'chaos',
-    note: 'WISMO is the highest-volume ticket type and the least automated. Shopify shows tracking numbers but doesn\'t monitor them. Every delay is a manual investigation.',
+    note: 'Highest-volume ticket type. Least automated. Shopify shows tracking numbers but doesn\'t monitor them — every delay is a manual investigation.',
   },
   {
     id: 'chargeback',
@@ -135,18 +153,17 @@ const SCENARIOS = [
       { label: 'Gather order + payment proof',            type: 'native', detail: 'Order timeline, payment confirmation' },
       { label: 'Gather delivery confirmation',            type: 'manual', detail: 'Screenshot carrier delivery scan manually' },
       { label: 'Compile customer communication history',  type: 'chaos',  detail: 'Dig through email/DMs — no unified inbox' },
-      { label: 'Write dispute response',                  type: 'manual', detail: 'Submit to bank via Shopify Payments — 72hr deadline' },
+      { label: 'Write and submit dispute response',       type: 'manual', detail: 'Submit to bank via Shopify Payments — 72hr deadline' },
     ],
     verdict: 'chaos',
-    note: 'Shopify surfaces the dispute but gathering evidence is a scavenger hunt across carrier portals, email, and order history. No native evidence packager.',
+    note: 'Shopify surfaces the dispute but gathering evidence is a scavenger hunt. No native evidence packager — every chargeback is a manual scramble against the clock.',
   },
 ]
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function SupportSim({ onBack }) {
-  const [active, setActive] = useState(null) // scenario id or null
-
+  const [active, setActive] = useState(null)
   const scenario = SCENARIOS.find(s => s.id === active)
 
   return (
@@ -164,7 +181,6 @@ export default function SupportSim({ onBack }) {
 function Inbox({ scenarios, onSelect, onBack }) {
   return (
     <div className="fill">
-      {/* Header */}
       <div style={{ padding: 'max(20px, env(safe-area-inset-top)) 18px 0' }}>
         <button
           onClick={onBack}
@@ -178,31 +194,30 @@ function Inbox({ scenarios, onSelect, onBack }) {
           <span style={{ color: 'var(--mint-deep)' }}>Simulator.</span>
         </h1>
         <p style={{ marginTop: 10, fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
-          Pick a customer request. See whether your workflow is clean — or chaos.
+          Pick a customer request and see who actually handles each step — Shopify, an app, or you.
         </p>
 
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 14, marginBottom: 16 }}>
-          {Object.entries(STEP_TYPES).map(([key, t]) => (
-            <span key={key} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              fontSize: 11, fontFamily: 'var(--display)', fontWeight: 600,
-              padding: '4px 9px', borderRadius: 999,
-              color: t.color, background: t.bg, border: `1px solid ${t.color}22`,
-            }}>
-              {t.icon} {t.label}
-            </span>
-          ))}
+        <div style={{ marginTop: 14, marginBottom: 16 }}>
+          <div className="kicker" style={{ marginBottom: 8 }}>Who handles each step</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {Object.entries(STEP_TYPES).map(([key, t]) => (
+              <span key={key} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontSize: 11, fontFamily: 'var(--display)', fontWeight: 600,
+                padding: '4px 9px', borderRadius: 999,
+                color: t.color, background: t.bg, border: `1px solid ${t.color}22`,
+              }}>
+                {t.icon} {t.label}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Scenario list */}
       <div className="fill scroll" style={{ padding: '0 18px max(24px, env(safe-area-inset-bottom))' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {scenarios.map((s, i) => {
             const verdict = VERDICTS[s.verdict]
-            const nativeCount = s.steps.filter(st => st.type === 'native').length
-            const totalCount = s.steps.length
             return (
               <button
                 key={s.id}
@@ -218,14 +233,10 @@ function Inbox({ scenarios, onSelect, onBack }) {
                   animationDelay: `${i * 0.04}s`,
                 }}
               >
-                {/* Emoji */}
                 <span style={{ fontSize: 26, flexShrink: 0 }}>{s.emoji}</span>
 
-                {/* Content */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontFamily: 'var(--display)', fontWeight: 700, fontSize: 15, lineHeight: 1.2,
-                  }}>
+                  <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>
                     {s.title}
                   </div>
                   <div style={{
@@ -234,19 +245,12 @@ function Inbox({ scenarios, onSelect, onBack }) {
                   }}>
                     {s.trigger}
                   </div>
-                  {/* Step mini-bar */}
                   <StepBar steps={s.steps} style={{ marginTop: 8 }} />
                 </div>
 
-                {/* Verdict badge */}
-                <span style={{
-                  flexShrink: 0, fontSize: 10, fontFamily: 'var(--display)', fontWeight: 700,
-                  padding: '4px 8px', borderRadius: 999,
-                  color: verdict.color, background: verdict.bg, border: `1px solid ${verdict.color}33`,
-                  textTransform: 'uppercase', letterSpacing: '.08em',
-                }}>
-                  {verdict.emoji}
-                </span>
+                <div style={{ flexShrink: 0, textAlign: 'center' }}>
+                  <div style={{ fontSize: 18 }}>{verdict.emoji}</div>
+                </div>
               </button>
             )
           })}
@@ -256,17 +260,20 @@ function Inbox({ scenarios, onSelect, onBack }) {
   )
 }
 
-// Mini coloured dot-bar showing step composition
 function StepBar({ steps, style }) {
   return (
     <div style={{ display: 'flex', gap: 3, ...style }}>
       {steps.map((step, i) => {
         const t = STEP_TYPES[step.type]
         return (
-          <div key={i} style={{
-            flex: 1, height: 4, borderRadius: 999, background: t.bg,
-            border: `1px solid ${t.color}44`,
-          }} />
+          <div
+            key={i}
+            title={`${step.label} — ${t.label}`}
+            style={{
+              flex: 1, height: 4, borderRadius: 999,
+              background: t.bg, border: `1px solid ${t.color}55`,
+            }}
+          />
         )
       })}
     </div>
@@ -277,10 +284,10 @@ function StepBar({ steps, style }) {
 
 function Detail({ scenario, onBack }) {
   const verdict = VERDICTS[scenario.verdict]
+  const unownedCount = scenario.steps.filter(s => s.type === 'manual' || s.type === 'chaos').length
 
   return (
     <div className="fill">
-      {/* Header */}
       <div style={{ padding: 'max(20px, env(safe-area-inset-top)) 18px 0' }}>
         <button
           onClick={onBack}
@@ -297,22 +304,20 @@ function Detail({ scenario, onBack }) {
           </div>
         </div>
 
-        {/* Trigger message */}
         <div className="card" style={{
           marginTop: 14, padding: '12px 14px',
           background: 'var(--putty-deep)', boxShadow: 'none',
           borderColor: 'var(--line)',
         }}>
           <div className="kicker" style={{ marginBottom: 5 }}>Customer message</div>
-          <p style={{ fontSize: 14, fontStyle: 'italic', lineHeight: 1.4, color: 'var(--ink)' }}>
+          <p style={{ fontSize: 14, fontStyle: 'italic', lineHeight: 1.4 }}>
             {scenario.trigger}
           </p>
         </div>
       </div>
 
-      {/* Steps */}
       <div className="fill scroll" style={{ padding: '16px 18px 0' }}>
-        <div className="kicker" style={{ marginBottom: 10 }}>Workflow steps</div>
+        <div className="kicker" style={{ marginBottom: 10 }}>Who handles each step</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {scenario.steps.map((step, i) => {
             const t = STEP_TYPES[step.type]
@@ -326,7 +331,6 @@ function Detail({ scenario, onBack }) {
                   animationDelay: `${i * 0.06}s`,
                 }}
               >
-                {/* Step number + type icon */}
                 <div style={{
                   width: 32, height: 32, borderRadius: 10, flexShrink: 0,
                   background: t.bg, border: `1px solid ${t.color}44`,
@@ -349,7 +353,7 @@ function Detail({ scenario, onBack }) {
                   flexShrink: 0, fontSize: 10, fontFamily: 'var(--display)', fontWeight: 700,
                   padding: '3px 7px', borderRadius: 999, marginTop: 1,
                   color: t.color, background: t.bg, border: `1px solid ${t.color}33`,
-                  textTransform: 'uppercase', letterSpacing: '.06em',
+                  textTransform: 'uppercase', letterSpacing: '.06em', whiteSpace: 'nowrap',
                 }}>
                   {t.label}
                 </span>
@@ -361,24 +365,30 @@ function Detail({ scenario, onBack }) {
         {/* Verdict */}
         <div style={{
           margin: '16px 0 max(24px, env(safe-area-inset-bottom))',
-          padding: '16px 16px',
+          padding: '16px',
           borderRadius: 'var(--r)',
           background: verdict.bg,
           border: `1px solid ${verdict.color}44`,
         }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
-          }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <span style={{ fontSize: 20 }}>{verdict.emoji}</span>
-            <span style={{
-              fontFamily: 'var(--display)', fontWeight: 700, fontSize: 15, color: verdict.color,
-            }}>
+            <span style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 15, color: verdict.color }}>
               {verdict.label}
             </span>
           </div>
           <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
             {scenario.note}
           </p>
+          {verdict.hook && (
+            <p style={{
+              marginTop: 10, paddingTop: 10,
+              borderTop: `1px solid ${verdict.color}33`,
+              fontSize: 13, fontFamily: 'var(--display)', fontWeight: 600,
+              color: verdict.color,
+            }}>
+              {unownedCount > 0 && `${unownedCount} step${unownedCount > 1 ? 's' : ''} land on you. `}{verdict.hook}
+            </p>
+          )}
         </div>
       </div>
     </div>
