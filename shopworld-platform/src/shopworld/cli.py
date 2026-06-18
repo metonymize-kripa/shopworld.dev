@@ -95,6 +95,7 @@ def run(
     
     # Load task
     loader = TaskLoader()
+    loader.load_all()
     task_obj = loader.get_task(task)
     
     if not task_obj:

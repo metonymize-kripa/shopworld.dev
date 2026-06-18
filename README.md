@@ -35,6 +35,38 @@ vercel.json       Vercel build/output configuration
 vite.config.js    Vite React plugin configuration
 ```
 
+
+## Monorepo contract
+
+This repository intentionally contains two related workstreams:
+
+| Package | Purpose | Canonical outcome | Deploy/release target |
+| --- | --- | --- | --- |
+| Root Vite app (`api/`, `src/`, `public/`) | **Drop Day**, the public shopworld.dev marketing/game experience. | A shippable, mobile-first React game with optional Vercel Blob email capture. | Vercel static app plus `/api/signup`. |
+| `shopworld-platform/` | **ShopWorld platform**, a Python package for deterministic Shopify-like agent evaluation. | A reproducible RL/evaluation environment with seeded commerce state, policy controls, traces, and reports. | Python package/CLI; not deployed with the Vite app. |
+| `platform-rnd/` | Research notes, specs, and review artifacts that inform the platform roadmap. | Planning context and architecture decision records; see `platform-rnd/README.md` for current status. | Documentation only. |
+
+Drop Day is the lightweight public-facing demo and brand surface. The Python platform is the deeper simulator/evaluation product. Changes should be reviewed against the package they affect; cross-package changes should explain the product relationship they are tightening.
+
+## Canonical commands
+
+Use the root `Makefile` for repeatable local checks across both runtimes:
+
+| Command | Purpose |
+| --- | --- |
+| `make app-build` | Build the Vite app. |
+| `make app-dev` | Start the Vite dev server. |
+| `make app-preview` | Preview the built Vite app. |
+| `make platform-sync` | Install/sync Python dependencies from `shopworld-platform/uv.lock`. |
+| `make platform-test` | Run the Python platform test suite. |
+| `make platform-lint` | Run Ruff checks on platform source and tests. |
+| `make platform-type` | Run mypy on platform source. |
+| `make platform-check` | Run platform tests, linting, and typing. |
+| `make check` | Run app build plus all platform checks. |
+| `make format` | Format platform Python code with Ruff and Black. |
+
+For reproducible platform setup, prefer `make platform-sync` before running Python checks.
+
 ## Local development
 
 ### Prerequisites
