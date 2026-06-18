@@ -1,14 +1,13 @@
 // POST /api/signup  { email }
-// Appends the email to a JSON array stored in Vercel Blob. Zero external DB.
+// Appends the email to a JSON array stored in Vercel Blob (private store).
 // No-ops gracefully when BLOB_READ_WRITE_TOKEN is not configured.
-import { put, list } from '@vercel/blob'
+import { put, list, get } from '@vercel/blob'
 
 export const config = { runtime: 'nodejs' }
 
 const KEY = 'signups.json'
 
 export default async function handler(req, res) {
-  console.log('[signup] invoked', req.method, JSON.stringify(req.body))
   try {
     if (req.method !== 'POST') {
       res.setHeader('Allow', 'POST')
@@ -20,7 +19,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Enter a valid email' })
     }
 
-    console.log('[signup] token present:', !!process.env.BLOB_READ_WRITE_TOKEN)
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return res.status(200).json({ ok: true, stored: false, reason: 'blob-not-configured' })
     }
@@ -28,27 +26,22 @@ export default async function handler(req, res) {
     // Read existing list
     let current = []
     try {
-      console.log('[signup] calling list()')
       const { blobs } = await list({ prefix: KEY })
-      console.log('[signup] list() returned', blobs.length, 'blobs')
       const hit = blobs.find(b => b.pathname === KEY)
       if (hit) {
-        const blobRes = await fetch(hit.downloadUrl)
-        console.log('[signup] fetch existing blob status:', blobRes.status)
-        if (blobRes.ok) {
-          const parsed = await blobRes.json()
+        const result = await get(hit.pathname, { access: 'private' })
+        if (result.stream) {
+          const text = await new Response(result.stream).text()
+          const parsed = JSON.parse(text)
           if (Array.isArray(parsed)) current = parsed
         }
       }
-    } catch (listErr) {
-      console.log('[signup] list/read error:', String(listErr?.message || listErr))
-    }
+    } catch { /* no existing file — start fresh */ }
 
     if (!current.some(e => e.email === email)) {
       current.push({ email, ts: new Date().toISOString() })
     }
 
-    console.log('[signup] calling put(), count:', current.length)
     await put(KEY, JSON.stringify(current, null, 2), {
       access: 'private',
       contentType: 'application/json',
@@ -56,10 +49,8 @@ export default async function handler(req, res) {
       allowOverwrite: true,
     })
 
-    console.log('[signup] put() succeeded')
     return res.status(200).json({ ok: true, stored: true, count: current.length })
   } catch (err) {
-    console.log('[signup] fatal error:', String(err?.message || err))
     return res.status(500).json({ ok: false, error: 'Storage failed', detail: String(err?.message || err) })
   }
 }
