@@ -8,6 +8,7 @@ export const config = { runtime: 'nodejs' }
 const KEY = 'signups.json'
 
 export default async function handler(req, res) {
+  console.log('[signup] invoked', req.method, JSON.stringify(req.body))
   try {
     if (req.method !== 'POST') {
       res.setHeader('Allow', 'POST')
@@ -19,6 +20,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Enter a valid email' })
     }
 
+    console.log('[signup] token present:', !!process.env.BLOB_READ_WRITE_TOKEN)
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return res.status(200).json({ ok: true, stored: false, reason: 'blob-not-configured' })
     }
