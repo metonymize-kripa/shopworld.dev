@@ -383,7 +383,7 @@ function Win({ game, onRetry, signedUp, setSignedUp }) {
         </p>
       </div>
       <EmailGate signedUp={signedUp} setSignedUp={setSignedUp} compact headline="Get the full sim early" />
-      <button className="btn btn-ghost focus-ring" style={{ width: '100%', marginTop: 14 }} onClick={onRetry}>
+      <button className="btn btn-ghost focus-ring" style={{ width: '100%', marginTop: 10 }} onClick={onRetry}>
         Play again
       </button>
     </div>
