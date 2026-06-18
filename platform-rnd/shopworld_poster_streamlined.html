@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ShopWorld — Streamlined Poster</title>
+<meta name="description" content="ShopWorld is a deterministic commerce-world evaluation environment for AI agents operating a simulated Shopify merchant business." />
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #090909;
+    --black-1: #171717;
+    --black-2: #303030;
+    --muted: #666666;
+    --line: #d9d9d9;
+    --line-strong: #090909;
+    --soft: #f7f7f7;
+    --red: #c62828;
+    --blue: #1565c0;
+    --green: #1b8f4d;
+    --max: 1240px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    line-height: 1.28;
+  }
+  a { color: inherit; text-decoration: none; }
+  .page {
+    width: min(calc(100vw - 32px), var(--max));
+    margin: 0 auto;
+    padding: 34px 0 42px;
+  }
+  .top {
+    border-top: 3px solid var(--line-strong);
+    border-bottom: 1.5px solid var(--line-strong);
+    padding: 22px 0 26px;
+  }
+  .eyebrow {
+    margin: 0 0 18px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(64px, 12vw, 164px);
+    line-height: .86;
+    letter-spacing: -.07em;
+    font-weight: 850;
+  }
+  .accent-red { color: var(--red); }
+  .accent-blue { color: var(--blue); }
+  .accent-green { color: var(--green); }
+  .subhead {
+    margin: 22px 0 0;
+    max-width: 980px;
+    font-size: clamp(23px, 3.4vw, 45px);
+    line-height: 1.02;
+    letter-spacing: -.035em;
+    font-weight: 520;
+  }
+  .url {
+    display: inline-block;
+    margin-top: 22px;
+    border: 1.5px solid var(--line-strong);
+    padding: 9px 12px;
+    font: 700 14px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .thesis {
+    display: grid;
+    grid-template-columns: 1.25fr .75fr;
+    gap: 38px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .thesis p {
+    margin: 0;
+    font-size: 16px;
+    color: var(--black-2);
+  }
+  .thesis .large {
+    font-size: clamp(22px, 2.7vw, 34px);
+    line-height: 1.08;
+    letter-spacing: -.025em;
+    color: var(--black-1);
+  }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-bottom: 2px solid var(--line-strong);
+  }
+  .metric {
+    padding: 20px 16px 18px;
+    border-right: 1px solid var(--line);
+  }
+  .metric:last-child { border-right: 0; }
+  .metric .num {
+    font-size: clamp(32px, 4vw, 58px);
+    line-height: .9;
+    letter-spacing: -.05em;
+    font-weight: 850;
+  }
+  .metric .label {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 34px;
+    padding-top: 30px;
+  }
+  section.block {
+    border-top: 2px solid var(--line-strong);
+    padding-top: 14px;
+  }
+  h2 {
+    margin: 0 0 16px;
+    font-size: 13px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  .item {
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+  }
+  .item:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+  }
+  h3 {
+    margin: 0 0 7px;
+    font-size: 22px;
+    line-height: 1.05;
+    letter-spacing: -.025em;
+  }
+  .item p {
+    margin: 0;
+    color: var(--black-2);
+    font-size: 14.5px;
+  }
+  .list {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .list li {
+    display: grid;
+    grid-template-columns: 8px 1fr;
+    gap: 10px;
+    align-items: start;
+    color: var(--black-2);
+    font-size: 14.5px;
+  }
+  .dot {
+    width: 5px;
+    height: 5px;
+    margin-top: .48em;
+    border-radius: 999px;
+    background: var(--ink);
+  }
+  .dot.red { background: var(--red); }
+  .dot.blue { background: var(--blue); }
+  .dot.green { background: var(--green); }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .formula {
+    background: var(--soft);
+    border-left: 3px solid var(--blue);
+    padding: 12px 13px;
+    font-size: 13px;
+    color: var(--black-1);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  td {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  td:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 750;
+    white-space: nowrap;
+  }
+  .callout {
+    margin-top: 26px;
+    border-top: 2px solid var(--line-strong);
+    border-bottom: 2px solid var(--line-strong);
+    padding: 18px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 28px;
+  }
+  .callout div {
+    font-size: 15px;
+    color: var(--black-2);
+  }
+  .callout b {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--ink);
+    font-size: 13px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .footer {
+    margin-top: 18px;
+    color: var(--muted);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    align-items: baseline;
+  }
+  @media (max-width: 900px) {
+    .thesis, .grid, .callout { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 560px) {
+    .page { width: min(calc(100vw - 20px), var(--max)); padding-top: 20px; }
+    .metrics { grid-template-columns: 1fr; }
+    .metric { border-right: 0; border-bottom: 1px solid var(--line); }
+    .metric:last-child { border-bottom: 0; }
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <header class="top">
+      <p class="eyebrow">Deterministic commerce-world evaluation</p>
+      <h1>Shop<span class="accent-red">W</span>orld</h1>
+      <p class="subhead">Can an AI safely run meaningful parts of a <span class="accent-blue">Shopify merchant business</span> before it receives live write access?</p>
+      <a class="url" href="https://shopworld.dev/">https://shopworld.dev/</a>
+    </header>
+
+    <section class="thesis">
+      <p class="large">ShopWorld is a resettable, stateful benchmark for AI store managers operating inside a simulated Shopify business.</p>
+      <p>The agent is evaluated across customer support, inventory, fulfillment, catalog operations, promotions, supplier coordination, advertising, and Shopify Admin GraphQL actions. The purpose is not tool-call correctness alone; it is safe operating judgment under merchant policy and delayed business consequences.</p>
+    </section>
+
+    <section class="metrics">
+      <div class="metric"><div class="num accent-red">20+</div><div class="label">Admin GraphQL world domains</div></div>
+      <div class="metric"><div class="num accent-blue">4,000+</div><div class="label">Documented schema pages</div></div>
+      <div class="metric"><div class="num accent-green">1,000</div><div class="label">Max single-query cost points</div></div>
+      <div class="metric"><div class="num">5</div><div class="label">Bulk queries per shop, 2026-01+</div></div>
+    </section>
+
+    <div class="grid">
+      <section class="block">
+        <h2>World</h2>
+        <div class="item">
+          <h3>Visible state</h3>
+          <ul class="list">
+            <li><span class="dot"></span><span>Products, variants, collections, inventory, locations.</span></li>
+            <li><span class="dot"></span><span>Orders, fulfillments, refunds, discounts, customers.</span></li>
+            <li><span class="dot"></span><span>Support tickets, supplier POs, cash ledger, policies.</span></li>
+          </ul>
+        </div>
+        <div class="item">
+          <h3>Hidden state</h3>
+          <ul class="list">
+            <li><span class="dot blue"></span><span>Customer patience, satisfaction, LTV, fraud risk.</span></li>
+            <li><span class="dot green"></span><span>Supplier reliability, lead time, defect rates.</span></li>
+            <li><span class="dot red"></span><span>Demand shocks, cash pressure, promo fatigue.</span></li>
+          </ul>
+        </div>
+        <div class="item">
+          <h3>Actor simulators</h3>
+          <p>Customers, shoppers, suppliers, logistics providers, advertising venues, and a merchant policy supervisor update the world between agent actions.</p>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>Evaluation</h2>
+        <div class="item">
+          <h3>Primary loop</h3>
+          <p class="formula mono">observe → act/message → mutate state → advance time → generate events → score outcome</p>
+        </div>
+        <div class="item">
+          <h3>Scoring target</h3>
+          <p>Success requires task completion, policy compliance, API competence, business impact, customer outcome, and no collateral damage.</p>
+        </div>
+        <div class="item">
+          <h3>Readiness output</h3>
+          <ul class="list">
+            <li><span class="dot red"></span><span>Unsafe permissions and representative failure traces.</span></li>
+            <li><span class="dot blue"></span><span>Workflow-level scores by operational domain.</span></li>
+            <li><span class="dot green"></span><span>Recommended authority level: read-only, draft, supervised, or bounded automation.</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>GraphQL scale</h2>
+        <div class="item">
+          <h3>Surface concentration</h3>
+          <table>
+            <tbody>
+              <tr><td>Products & collections</td><td>~40 Q · ~74 M · ~100+ O</td></tr>
+              <tr><td>Orders / returns</td><td>~30 Q · ~90 M · ~165 O</td></tr>
+              <tr><td>Fulfillment</td><td>~20 Q · ~45 M · ~56 O</td></tr>
+              <tr><td>Customers</td><td>17 Q · 31 M · 36 O</td></tr>
+              <tr><td>Discounts</td><td>~27 Q · ~48 M · ~59 O</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="item">
+          <h3>Hard limits</h3>
+          <table>
+            <tbody>
+              <tr><td>Variants per product</td><td>2,048</td></tr>
+              <tr><td>Input array size</td><td>250</td></tr>
+              <tr><td>Query cost ceiling</td><td>1,000</td></tr>
+              <tr><td>Bulk runtime</td><td>10 days</td></tr>
+              <tr><td>Post-50k variant throttle</td><td>1,000/day</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="callout">
+      <div><b>Benchmark</b>Resettable state, typed APIs, deterministic seeds, trace replay, pass/fail evaluators.</div>
+      <div><b>Simulator</b>Delayed consequences for refunds, discounts, supplier failures, carrier delays, stockouts, and reviews.</div>
+      <div><b>Product</b>A merchant-facing readiness report that maps agents to safe workflow and permission scopes.</div>
+    </section>
+
+    <footer class="footer">
+      <span>ShopWorld = bounded commercial world model + Shopify-like Admin GraphQL + actor simulators + vector reward.</span>
+      <span class="mono">https://shopworld.dev/</span>
+    </footer>
+  </main>
+</body>
+</html>
