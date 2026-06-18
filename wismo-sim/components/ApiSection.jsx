@@ -73,7 +73,7 @@ export default function ApiSection({ scenario }) {
           Each scenario demonstrates how many external systems must coordinate to resolve a single 
           customer request. L0 workflows stay within Shopify's GraphQL surface. L2+ workflows 
           require orchestrating carrier APIs, 3PL systems, and manual human judgment — 
-          precisely where Shopworld provides value.
+          precisely where our runtime provides value.
         </p>
       </div>
     </div>

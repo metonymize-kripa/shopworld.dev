@@ -69,11 +69,11 @@ export default function GapsSection({ scenario }) {
       )}
 
       <div className="card-dark" style={{ padding: '14px 16px', marginTop: 8 }}>
-        <div className="kicker" style={{ marginBottom: 8, color: 'rgba(255,255,255,.6)' }}>Shopworld Solution</div>
+        <div className="kicker" style={{ marginBottom: 8, color: 'rgba(255,255,255,.6)' }}>Our Runtime Solution</div>
         <p style={{ fontSize: 12, color: 'rgba(255,255,255,.8)', lineHeight: 1.5 }}>
           {gapAnalysis.missing.length === 0 
-            ? "This is a clean L0 workflow — Shopify handles it natively. Shopworld passes through without adding overhead."
-            : `This workflow has ${gapAnalysis.missing.length} manual gaps that Shopworld fills with: (1) automated state monitoring, (2) external API orchestration, (3) decision logic based on policy + data, and (4) unified customer communication.`}
+            ? "This is a clean L0 workflow — Shopify handles it natively. Our runtime passes through without adding overhead."
+            : `This workflow has ${gapAnalysis.missing.length} manual gaps that our runtime fills with: (1) automated state monitoring, (2) external API orchestration, (3) decision logic based on policy + data, and (4) unified customer communication.`}
         </p>
       </div>
     </div>

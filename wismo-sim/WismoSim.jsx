@@ -1,6 +1,6 @@
 /**
  * WISMO Simulator — Post-Purchase Support World MVP
- * Technically explanatory demo showing how Shopworld handles
+ * Technically explanatory demo showing how our runtime handles
  * "Where Is My Order" scenarios with full state transparency
  */
 

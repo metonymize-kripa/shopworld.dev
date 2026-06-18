@@ -30,7 +30,7 @@ export default function ScenarioInbox({ onSelect }) {
       <WismoInfoModal open={showInfo} onClose={() => setShowInfo(false)} />
 
       <div style={{ padding: 'max(20px, env(safe-area-inset-top)) 18px 0' }}>
-        <div className="kicker">shopworld.dev</div>
+        <div className="kicker">our runtime</div>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
           <h1 className="display" style={{ fontSize: 'clamp(30px, 9vw, 40px)', marginTop: 6, lineHeight: 1.05, flex: 1 }}>
             WISMO<br />

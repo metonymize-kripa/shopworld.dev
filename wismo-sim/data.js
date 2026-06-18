@@ -149,7 +149,7 @@ export const SCENARIOS = [
     ],
     steps: [
       { label: 'Query order + tracking',         type: 'native', detail: 'GraphQL order query returns stale tracking' },
-      { label: 'Detect exception (no scan 5d+)', type: 'native', detail: 'Shopworld logic: daysSinceScan > threshold' },
+      { label: 'Detect exception (no scan 5d+)', type: 'native', detail: 'Our runtime logic: daysSinceScan > threshold' },
       { label: 'Open carrier investigation',     type: 'external', detail: 'POST /v1/cases { trackingNumber, reason: "no_scan" }' },
       { label: 'Set follow-up reminder',         type: 'manual', detail: 'No native Shopify reminder — manual calendar entry' },
     ],
