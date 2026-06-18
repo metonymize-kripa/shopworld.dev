@@ -43,9 +43,9 @@ export default async function handler(req, res) {
       const { blobs } = await list({ prefix: KEY })
       const hit = blobs.find(b => b.pathname === KEY)
       if (hit) {
-        const result = await get(hit.url, { access: 'private' })
+        const result = await get(hit.pathname, { access: 'private' })
         const chunks = []
-        for await (const chunk of result.body) chunks.push(chunk)
+        for await (const chunk of result.stream) chunks.push(chunk)
         const text = Buffer.concat(chunks).toString('utf8')
         current = JSON.parse(text)
         if (!Array.isArray(current)) current = []
