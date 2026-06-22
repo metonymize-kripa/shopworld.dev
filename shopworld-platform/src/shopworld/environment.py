@@ -9,6 +9,7 @@ from shopworld.common.datetime import SimulatedClock
 from shopworld.common.serialization import StateSnapshot, state_diff
 from shopworld.common.errors import ShopWorldError
 from shopworld.backend.db import init_database
+from shopworld.api_surface import MERCHANT_TOOL_AUTHORIZATIONS
 from shopworld.apps.shopify_admin.graphql_api.scopes import check_scope, ScopeError
 
 
@@ -89,27 +90,10 @@ class ShopWorldEnv:
         "adjust_inventory": "inventoryAdjustQuantities",
         "send_message": "orderUpdate",  # requires write_orders
         "close_ticket": "orderUpdate",
-        "orders.query": "orders",
-        "orders.cancel": "orderCancel",
-        "orders.update": "orderUpdate",
-        "customers.query": "customers",
-        "customers.update": "customerUpdate",
-        "customers.tag": "tagsAdd",
-        "fulfillments.query": "fulfillmentOrders",
-        "fulfillments.cancel": "fulfillmentCreateV2",
-        "inventory.query": "inventoryLevels",
-        "inventory.adjust": "inventoryAdjustQuantities",
-        "refunds.create": "refundCreate",
-        "refunds.query": "orders",
-        "products.query": "products",
-        "products.update": "productUpdate",
-        "discounts.create": "discountCodeBasicCreate",
-        "discounts.query": "discountNodes",
-        "tickets.query": "orders",
-        "tickets.reply": "orderUpdate",
-        "tickets.escalate": "orderUpdate",
-        "policy.lookup": "shop",
-        "policy.explain": "shop",
+        **{
+            tool_name: authorization.operation
+            for tool_name, authorization in MERCHANT_TOOL_AUTHORIZATIONS.items()
+        },
     }
 
     def __init__(
@@ -382,7 +366,7 @@ class ShopWorldEnv:
         operation = self._get_required_scope(action.tool_name)
         if operation:
             try:
-                check_scope(operation, set(self.granted_scopes))
+                self._check_tool_scope(action.tool_name, set(self.granted_scopes))
             except ScopeError as exc:
                 violations.append(f"SCOPE: {exc}")
 
@@ -647,11 +631,25 @@ class ShopWorldEnv:
         available = []
         for tool, operation in self._TOOL_SCOPE_MAP.items():
             try:
-                check_scope(operation, granted)
+                self._check_tool_scope(tool, granted)
                 available.append(tool)
             except ScopeError:
                 pass
         return available
+
+    def _check_tool_scope(self, tool_name: str, granted_scopes: set[str]) -> None:
+        """Check exact Merchant API tool scopes, falling back to GraphQL operation scopes."""
+        authorization = MERCHANT_TOOL_AUTHORIZATIONS.get(tool_name)
+        if authorization is None:
+            operation = self._get_required_scope(tool_name)
+            if operation:
+                check_scope(operation, granted_scopes)
+            return
+
+        required = authorization.required_scopes
+        if not required or required & granted_scopes:
+            return
+        raise ScopeError(authorization.operation, required, granted_scopes)
 
     def _get_required_scope(self, tool_name: str) -> Optional[str]:
         """Return the GraphQL operation name that governs this tool's scope."""
