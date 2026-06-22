@@ -17,12 +17,13 @@ The MVP should answer three questions:
 | Area | Role | Status |
 | --- | --- | --- |
 | Root Vite app (`src/`, `api/`, `public/`) | Public-facing interactive demo for the ShopWorld thesis. It compresses agentic commerce decisions into a short “Agent Sprint” game loop. | Canonical web app. |
-| `support-sim/` | Deployable post-purchase support scenario explorer. It illustrates which agentic-commerce workflows are native, app-assisted, manual, or chaotic. | Scenario explorer; kept deployable for existing Vercel projects. |
-| `wismo-sim/` | Deployable WISMO/order-exception deep dive with API, data-model, and gap-analysis views. | Scenario explorer; kept deployable for existing Vercel projects. |
+| `packages/shopworld-scenarios/` | UI-free shared scenario fixtures and runtime taxonomy for component simulators and future platform tasks. | Canonical fixture library. |
+| `support-sim/` | Deployable post-purchase support scenario explorer. It renders shared support fixtures and illustrates which workflows are native, app-assisted, manual, or chaotic. | Scenario explorer; kept deployable for existing Vercel projects. |
+| `wismo-sim/` | Deployable WISMO/order-exception deep dive with API, data-model, and gap-analysis views. It renders shared WISMO fixtures. | Scenario explorer; kept deployable for existing Vercel projects. |
 | `shopworld-platform/` | Python package for deterministic commerce-agent evaluation: seeded state, Shopify-like APIs, tasks, rewards, traces, and reports. | Canonical simulator/evaluation runtime. |
 | `platform-rnd/` | Research archive and active planning notes. | Reference only; use `platform-rnd/README.md` to identify active docs. |
 
-The scenario explorers are not separate product directions; they are deployable visual slices that explain workflows the platform should eventually evaluate deterministically. New experiments should either become part of the root demo, land as tested platform scenarios, or remain as clearly labeled research notes under `platform-rnd/`.
+The scenario explorers are not separate product directions; they are deployable visual slices backed by `packages/shopworld-scenarios/` fixtures that explain workflows the platform should eventually evaluate deterministically. New experiments should either become part of the root demo, land as tested platform scenarios, or remain as clearly labeled research notes under `platform-rnd/`.
 
 ## Root web app
 
@@ -43,6 +44,7 @@ src/gameData.js   Catalog, customer prompts, scoring rules, restock offers, day 
 src/main.jsx      React entry point
 src/styles.css    Design tokens, layout, components, animations
 src/ui.jsx        Shared HUD pieces: cash, reputation, patience ring, floaters
+packages/shopworld-scenarios/ UI-free shared scenario fixtures and runtime taxonomy
 support-sim/      Deployable support-workflow scenario explorer
 wismo-sim/        Deployable WISMO/order-exception scenario explorer
 index.html        Vite HTML shell
@@ -113,6 +115,6 @@ The endpoint validates the email, deduplicates by address, and stores entries in
 
 - Keep the root app as a concise explanation of ShopWorld, not a second product.
 - Keep deterministic agent evaluation in `shopworld-platform/`.
-- Avoid adding orphan prototype directories; every runnable app needs a documented owner, command, deployment reason, and relationship to the platform.
+- Avoid adding orphan prototype directories; every runnable app needs a documented owner, command, deployment reason, fixture source, and relationship to the platform.
 - Treat `platform-rnd/` as context, not source of truth, unless its index marks a document active.
 - Prefer one complete vertical slice with tests and evaluator checks over many partial API mocks.

@@ -1,0 +1,11 @@
+{
+  "name": "@shopworld/scenarios",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./support": "./src/support/index.js",
+    "./wismo": "./src/wismo/index.js",
+    "./runtime": "./src/runtime.js"
+  }
+}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { WORKFLOW_LEVELS, SCENARIOS } from '../data.js'
+import { WORKFLOW_LEVELS, SCENARIOS } from '../../packages/shopworld-scenarios/src/wismo/index.js'
 import OverviewSection from './OverviewSection.jsx'
 import DataModelSection from './DataModelSection.jsx'
 import ApiSection from './ApiSection.jsx'
