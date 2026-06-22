@@ -6,8 +6,8 @@ both to the agent-blind runner. Agents that fail to import (missing optional dep
 no API key) are skipped with a notice rather than aborting the run.
 
 Usage:
-    python experiments/run_benchmark.py [--config experiments/configs/mvp_30.yaml]
-    python experiments/run_benchmark.py --agents baseline,milli_run --seeds 1,2,3
+    uv run python experiments/run_benchmark.py [--config experiments/configs/mvp_30.yaml]
+    uv run python experiments/run_benchmark.py --agents baseline,milli_run --seeds 1,2,3
 """
 
 from __future__ import annotations
@@ -54,8 +54,26 @@ def build_agent_registry(names: List[str]) -> Dict[str, Callable[[], Agent]]:
                 registry["llm_agent"] = LLMAgent
             except Exception as exc:  # noqa: BLE001
                 print(f"[skip] llm_agent unavailable: {exc}", file=sys.stderr)
-        elif name in ("llm_agent_anthropic", "llm_agent_real"):
-            # Real frontier model under test (not the offline ScriptedLLMClient).
+        elif name in ("llm_agent_ollama", "llm_agent_local", "llm_agent_real"):
+            # Local real model under test (not the offline ScriptedLLMClient).
+            # Requires a running Ollama server and a pulled model. Model is
+            # configurable via SHOPWORLD_LLM_MODEL; host via OLLAMA_HOST.
+            try:
+                import os
+
+                from llm_agent import LLMAgent
+                from llm_agent.client import OllamaClient
+
+                model = os.environ.get("SHOPWORLD_LLM_MODEL", "gemma4:12b-mlx")
+                OllamaClient(model=model)  # validate Ollama + model up front
+                registry[name] = lambda model=model: LLMAgent(client=OllamaClient(model=model))
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"[skip] {name} unavailable (need Ollama running + model pulled): {exc}",
+                    file=sys.stderr,
+                )
+        elif name == "llm_agent_anthropic":
+            # Hosted frontier model under test (not the offline ScriptedLLMClient).
             # Requires `pip install anthropic` and ANTHROPIC_API_KEY. Model is
             # configurable via SHOPWORLD_LLM_MODEL. We construct one client now to
             # validate prerequisites and skip (not abort) if they are missing.
