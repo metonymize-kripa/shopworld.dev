@@ -46,11 +46,12 @@ Core implementation of the ShopWorld platform is complete, providing the foundat
 - `to_readiness_report()` for merchant-facing output
 - Staged authority recommendation (read-only → autonomous)
 
-### Phase 5: Database Layer (apps/lib/db.py)
-- `ShopWorldDB` SQLite manager with SQLModel
+### Phase 5: Backend Database Layer (`backend/db.py`)
+- `Database` SQLite manager with SQLModel
 - Session context manager
-- Snapshot/restore for deterministic reset
+- Deterministic in-memory SQLite setup via `StaticPool`
 - `init_database()` factory function
+- Legacy `apps/lib/db.py` compatibility shim for existing imports
 
 ### Phase 6: Commerce Models (apps/shopify_admin/models.py)
 Complete Shopify-like schema:
@@ -124,6 +125,10 @@ shopworld-platform/
 │   ├── task.py              # Task definitions
 │   ├── evaluator.py         # Evaluation engine
 │   ├── reward.py            # Reward vector
+│   ├── backend/
+│   │   ├── __init__.py
+│   │   ├── README.md       # Backend library boundaries and migration plan
+│   │   └── db.py           # Canonical SQLModel database helpers
 │   ├── common/
 │   │   ├── __init__.py
 │   │   ├── datetime.py      # SimulatedClock
@@ -133,7 +138,7 @@ shopworld-platform/
 │   │   ├── __init__.py
 │   │   ├── lib/
 │   │   │   ├── __init__.py
-│   │   │   └── db.py        # SQLModel database
+│   │   │   └── db.py        # Compatibility shim to backend.db
 │   │   └── shopify_admin/
 │   │       ├── __init__.py
 │   │       ├── models.py    # Commerce entities
@@ -153,10 +158,11 @@ shopworld-platform/
 ## Remaining Work
 
 ### High Priority
-1. **Actor Simulators** - Customer, supplier, logistics, demand, ad simulators
-2. **Tool Implementations** - Complete 25+ Shopify-like tools
-3. **Initial Task Library** - 20+ scenarios with real test data
-4. **Integration Tests** - End-to-end episode tests
+1. **Backend Library Modularization** - Extract persistence, runtime, commerce, policy, simulation, and evaluation libraries behind canonical `shopworld.backend.*` imports
+2. **Actor Simulators** - Customer, supplier, logistics, demand, ad simulators
+3. **Tool Implementations** - Complete 25+ Shopify-like tools
+4. **Initial Task Library** - 20+ scenarios with real test data
+5. **Integration Tests** - End-to-end episode tests
 
 ### Medium Priority
 5. **MCP Server** - Model Context Protocol serving
@@ -193,11 +199,13 @@ To continue implementation:
    python -m shopworld.examples.hello_world
    ```
 
-4. **Implement actor simulators** (customers, suppliers, logistics)
+4. **Continue backend modularization** using `src/shopworld/backend/README.md` as the extraction plan
 
-5. **Create initial task scenarios** with real database seed data
+5. **Implement actor simulators** (customers, suppliers, logistics)
 
-6. **Build out tool implementations** connecting GraphQL to database mutations
+6. **Create initial task scenarios** with real database seed data
+
+7. **Build out tool implementations** connecting GraphQL to database mutations
 
 ## Architecture Decisions Made
 
