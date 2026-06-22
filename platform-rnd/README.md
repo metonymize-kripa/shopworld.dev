@@ -143,6 +143,15 @@ ShopWorld maintains hidden state that agents cannot directly inspect.
 
 ## 5. Shopper-Facing Commerce Simulator Capability
 
+> **Status: DEFERRED (post-MVP).** The MVP (§10) is scoped to the merchant-operations
+> benchmark (WISMO, cancellation, address change, refund, return, escalation), which is
+> now implemented end-to-end (environment + two agents + neutral runner + comparative
+> report). This shopper-facing track — Postgres/Solr-style backend, anti-oracle tools,
+> vanilla-search baseline, and the Baymard/Bitext/ESCI query generator — is intentionally
+> not built yet and should be picked up only after the merchant benchmark produces its
+> first comparative report. It is documented here as the design of record for that future
+> milestone, not an active implementation contract.
+
 ShopWorld also includes a shopper-facing product-discovery benchmark in addition to merchant operations. This capability evaluates whether a shopping agent can reason over imperfect production-like commerce interfaces better than plain search, without exposing hidden catalog truth.
 
 The setup is a **commerce simulator with hidden store truth, a realistic legacy search/data backend, and a constrained agent-facing tool surface that exposes only what a real shopping agent would plausibly get from production APIs**.

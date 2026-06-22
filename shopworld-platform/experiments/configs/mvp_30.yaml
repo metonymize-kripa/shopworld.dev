@@ -1,0 +1,19 @@
+# ShopWorld MVP benchmark configuration (README §10, §12).
+#
+# Scenario set: the 5 state-dependent workflow families (WISMO, cancellation,
+# address change, refund, return) with state variants, built by
+# shopworld.tasks.mvp_task_set(). Run across multiple seeds for robustness.
+
+agents:
+  - baseline      # scripted floor (no NLU, no policy reasoning)
+  - milli_run     # neuro-symbolic merchant runtime under test
+  - llm_agent     # LLM tool-use merchant runtime under test
+
+seeds: [1, 2, 3]
+
+max_steps: 25
+
+# Notes:
+# - Agents that cannot import (missing deps / no API key) are skipped, not fatal.
+# - The runner is neutral: identical scenarios, observations, tools, and
+#   evaluator for every agent (README §13 interface equality).

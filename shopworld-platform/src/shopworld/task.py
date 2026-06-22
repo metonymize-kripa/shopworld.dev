@@ -51,18 +51,22 @@ class Task:
     prerequisites: List[str] = field(default_factory=list)
     
     def generate_initial_state(self, seed: Optional[int] = None) -> Dict[str, Any]:
-        """Generate initial hidden state deterministically from seed."""
-        if seed is not None:
-            random.seed(seed)
-        
+        """Generate initial hidden state deterministically from seed.
+
+        Uses a task-local RNG seeded from ``seed`` rather than mutating the
+        global ``random`` module, so concurrent/adjacent code cannot perturb
+        the deterministic episode (determinism rule, README §13).
+        """
+        rng = random.Random(seed)
+
         # Deep copy to avoid mutation
         import copy
         state = copy.deepcopy(self.initial_hidden_state)
-        
+
         # Add any seed-derived randomization
         if "customer_satisfaction_noise" not in state:
-            state["customer_satisfaction_noise"] = random.gauss(0, 0.1)
-        
+            state["customer_satisfaction_noise"] = rng.gauss(0, 0.1)
+
         return state
     
     def is_terminal(self, state: Dict[str, Any]) -> bool:
@@ -129,19 +133,32 @@ class Task:
                 for r in records
             )
         
-        elif check_type == "field_equals":
-            # Check specific field value
+        elif check_type in ("field_equals", "field_not_equals", "field_in"):
+            # Check specific field value on records matching either an explicit
+            # id or a filters dict. ``field_not_equals`` is the negation;
+            # ``field_in`` accepts a list of acceptable values.
             table = condition.get("table")
             record_id = condition.get("id")
+            filters = condition.get("filters", {})
             field = condition.get("field")
             expected = condition.get("value")
-            
+            accepted = condition.get("values", [])
+
             records = state.get(table, [])
             for r in records:
-                if r.get("id") == record_id and r.get(field) == expected:
+                if record_id is not None and r.get("id") != record_id:
+                    continue
+                if filters and not all(r.get(k) == v for k, v in filters.items()):
+                    continue
+                value = r.get(field)
+                if check_type == "field_equals" and value == expected:
+                    return True
+                if check_type == "field_not_equals" and value != expected:
+                    return True
+                if check_type == "field_in" and value in accepted:
                     return True
             return False
-        
+
         elif check_type == "count":
             # Check count of matching records
             table = condition.get("table")

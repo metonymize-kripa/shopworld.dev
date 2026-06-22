@@ -5,6 +5,73 @@
 Core implementation of the ShopWorld platform is complete, providing the foundational infrastructure for a deterministic RL environment simulating Shopify merchant operations.
 
 
+## 2026-06-22 Update: Benchmark Runner, Two Agents, Comparative Report (COMPLETION_RECOMMENDATIONS execution)
+
+Executed `platform-rnd/COMPLETION_RECOMMENDATIONS.md`. The environment was already
+built; this closed the missing benchmark half — the comparison ShopWorld exists to run.
+
+### P0 — Neutral harness
+- `shopworld/agents/` — agent-blind `Agent` protocol + `BaselineAgent`/`NoOpAgent`.
+- `shopworld/bench/runner.py` — neutral §7 ten-step loop; `run_episode` / `run_benchmark`.
+- `experiments/run_benchmark.py` + `experiments/configs/mvp_30.yaml` CLI.
+- The runner imports no agent-under-test (asserted by test), preserving §13 separation.
+
+### P1 — Two agents under test (sibling packages, Merchant API Surface only)
+- `milli_run/` — shallow linear NLU (SVM/FastText-style, numpy), regex entity
+  extractor, confidence router, risk/policy guards, 5 workflow state machines,
+  transaction planner with rollback plan, full audit log.
+- `llm_agent/` — provider-agnostic ReAct tool-use loop. Default offline
+  `ScriptedLLMClient` (deterministic, no network); `AnthropicClient` adapter for a
+  real model.
+
+### P2 — Determinism + replay
+- Removed global `random.seed()`; episode-local RNG + seeded id factory so the same
+  seed + actions reproduce identical record ids/state. `shopworld/traces/replay.py`
+  with `assert_deterministic`.
+
+### P3 — Bitext + 30 scenarios
+- `shopworld/scenarios/` — Bitext support/retail importers (CSV-or-synthetic),
+  deterministic nlu_train/scenario_seed/heldout_test splits with leakage assertion
+  (§6). 500+ utterances per domain. NLU trains on built-in + Bitext nlu_train.
+- `mvp_task_set()` expanded to 30 scenarios (6 families × 5 variants), including a
+  new escalation/abuse family that creates a fair milli.run-vs-LLM divergence.
+
+### P4 — Comparative failure-taxonomy report
+- `shopworld/bench/compare.py` + `experiments/compare_agents.py`: aggregates, §9
+  failure taxonomy (milli.run vs LLM modes), NLU benchmark, written to
+  `experiments/reports/comparative_report.md`.
+
+### Headline result (30 scenarios × 3 seeds = 270 episodes)
+| Agent | Success | Avg score | Collateral | NLU held-out acc |
+| --- | --- | --- | --- | --- |
+| baseline | 54/90 (60%) | 56.0 | 0 | — |
+| llm_agent | 75/90 (83%) | 70.0 | 0 | — |
+| milli_run | 90/90 (100%) | 80.0 | 0 | 94% |
+
+LLM failures cluster in `policy_drift` (fails to escalate abuse/fraud); milli.run
+has none on the MVP set and carries a full audit trail.
+
+### Bug fixes found while wiring agents
+1. `_get_current_state()` omitted `refunds`/`returns` — refund/return scenarios were
+   unscorable. Fixed.
+2. `task.py` lacked the `field_not_equals` check `cancellation.py` relied on — the
+   FULFILLED-cancel success condition could never pass. Added `field_not_equals`/`field_in`.
+3. Collateral-damage check flagged authorized writes (refund status, address note) as
+   damage. Now respects tables authorized by the task's granted scopes.
+
+### Hygiene
+- Removed the dead placeholder `_compute_business_metrics` (now real, state-derived).
+- Wired the supplier simulator; demand/ads documented as deferred.
+- Collapsed the deprecated duplicate `graphql.py` to an import-error shim (issue C4).
+- Scenario inboxes focused on the scenario ticket (removed 11 noise tickets per episode).
+
+### Scope
+- §5 shopper-facing benchmark marked DEFERRED in `platform-rnd/README.md`.
+
+**Test count: 197 passing (was 151).**
+
+---
+
 ## 2026-06-22 Update: MVP Scenario Families and Full Tool Contract
 
 Closed the remaining gaps between the codebase and `platform-rnd/README.md` §4, §7, §8, and §10.

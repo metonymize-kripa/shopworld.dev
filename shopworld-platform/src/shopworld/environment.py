@@ -115,6 +115,8 @@ class ShopWorldEnv:
 
         # Episode state
         self.episode_id: str = ""
+        self.seed: Optional[int] = None
+        self.rng: Optional[Any] = None
         self.step_number: int = 0
         self.total_query_cost: int = 0
         self.granted_scopes: List[str] = []
@@ -150,8 +152,10 @@ class ShopWorldEnv:
         """
         import random
 
-        if seed is not None:
-            random.seed(seed)
+        # Episode-local RNG. Never mutate global random state (determinism C2):
+        # unrelated code consuming the global module must not perturb replays.
+        self.seed = seed
+        self.rng = random.Random(seed)
 
         self.episode_id = str(uuid.uuid4())[:8]
         self.step_number = 0
@@ -311,22 +315,39 @@ class ShopWorldEnv:
         if self.task and hasattr(self.task, "initial_db_records"):
             self._load_task_records(self.task.initial_db_records)
 
+    def _det_id(self, n: int = 10) -> str:
+        """Deterministic hex id from the episode RNG (for replayable records)."""
+        rng = self.rng
+        if rng is None:
+            import uuid as _uuid
+
+            return _uuid.uuid4().hex[:n]
+        return "".join(rng.choice("0123456789abcdef") for _ in range(n))
+
     def _init_api_surface(self) -> None:
         """Initialize the constrained Merchant API Surface facade."""
         from shopworld.api_surface import MerchantAPISurface
 
-        self.api_surface = MerchantAPISurface(self.db) if self.db else None
+        self.api_surface = (
+            MerchantAPISurface(self.db, id_factory=self._det_id) if self.db else None
+        )
 
     def _init_simulators(self, seed: Optional[int]) -> None:
-        """Initialize actor simulators."""
+        """Initialize actor simulators.
+
+        Customer, logistics, and supplier simulators are wired. Demand and ad
+        simulators (README §7) are deferred to a later milestone and left as
+        None; ``_run_simulators`` guards on presence so they no-op safely.
+        """
         from shopworld.apps.logistics.simulator import LogisticsSimulator
         from shopworld.apps.customers.simulator import CustomerSimulator
+        from shopworld.apps.suppliers.simulator import SupplierSimulator
 
         self.logistics_sim = LogisticsSimulator(seed=seed)
         self.customer_sim = CustomerSimulator(seed=seed)
-        self.supplier_sim = None
-        self.demand_sim = None
-        self.ad_sim = None
+        self.supplier_sim = SupplierSimulator(seed=seed)
+        self.demand_sim = None  # deferred (README §7)
+        self.ad_sim = None  # deferred (README §7)
         self.policy_supervisor = None
 
     def _execute_action(self, action: Action) -> None:
@@ -478,14 +499,26 @@ class ShopWorldEnv:
         return counts
 
     def _compute_business_metrics(self) -> Dict[str, float]:
-        """Compute business outcome metrics from current state."""
-        # Placeholder - will query DB for actual metrics
+        """Compute business outcome metrics from current visible state.
+
+        Derived from the serialized canonical state so the numbers are real, not
+        placeholders. The richer trace-based business impact lives in
+        ``Evaluator``; this is a lightweight current-state snapshot.
+        """
+        state = self._get_current_state()
+        orders = state.get("orders", [])
+        refunds = state.get("refunds", [])
+        inventory = state.get("inventory_levels", [])
+        revenue = sum(float(o.get("total_price", 0) or 0) for o in orders)
+        refunded = sum(float(r.get("total_refunded", 0) or 0) for r in refunds)
+        stockouts = sum(1 for lvl in inventory if (lvl.get("available", 0) or 0) <= 0)
+        stockout_rate = stockouts / len(inventory) if inventory else 0.0
         return {
-            "revenue": 0.0,
-            "margin": 0.0,
-            "cash_balance": 0.0,
-            "customer_satisfaction": 0.0,
-            "stockout_rate": 0.0,
+            "revenue": revenue,
+            "margin": 0.0,  # requires COGS, not modeled in the MVP slice
+            "cash_balance": revenue - refunded,
+            "customer_satisfaction": 0.0,  # hidden-state driven; see simulators
+            "stockout_rate": stockout_rate,
         }
 
     def _compute_api_efficiency(self) -> Dict[str, float]:
@@ -546,6 +579,8 @@ class ShopWorldEnv:
             SupportTicket,
             SupportMessage,
             InventoryLevel,
+            Refund,
+            Return,
         )
         from sqlmodel import select
 
@@ -587,6 +622,25 @@ class ShopWorldEnv:
                     "available": r.available,
                 }
                 for r in session.exec(select(InventoryLevel)).all()
+            ]
+            state["refunds"] = [
+                {
+                    "id": r.id,
+                    "order_id": r.order_id,
+                    "total_refunded": float(r.total_refunded),
+                    "reason": r.reason,
+                }
+                for r in session.exec(select(Refund)).all()
+            ]
+            state["returns"] = [
+                {
+                    "id": r.id,
+                    "order_id": r.order_id,
+                    "customer_id": r.customer_id,
+                    "status": r.status,
+                    "return_reason": r.return_reason,
+                }
+                for r in session.exec(select(Return)).all()
             ]
         return state
 
@@ -668,11 +722,10 @@ class ShopWorldEnv:
         if not self.db:
             return
         from shopworld.apps.shopify_admin.models import SupportTicket
-        import uuid as _uuid
 
         with self.db.session() as session:
             ticket = SupportTicket(
-                id=event.get("ticket_id") or f"ticket-{_uuid.uuid4().hex[:8]}",
+                id=event.get("ticket_id") or f"ticket-{self._det_id(8)}",
                 customer_id=event.get("customer_id"),
                 order_id=event.get("order_id"),
                 subject=event.get("subject", "Support request"),
@@ -714,12 +767,11 @@ class ShopWorldEnv:
         if not self.db or not args.get("ticket_id"):
             return
         from shopworld.apps.shopify_admin.models import SupportMessage
-        import uuid as _uuid
 
         body = message or args.get("body", "")
         with self.db.session() as session:
             msg = SupportMessage(
-                id=f"msg-{_uuid.uuid4().hex[:8]}",
+                id=f"msg-{self._det_id(8)}",
                 ticket_id=args["ticket_id"],
                 sender_type="AGENT",
                 body=body,

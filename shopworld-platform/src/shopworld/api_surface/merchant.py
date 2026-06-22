@@ -178,8 +178,14 @@ class ToolResult:
 class MerchantAPISurface:
     """Constrained agent-visible tools for merchant operations."""
 
-    def __init__(self, db: Database):
+    def __init__(self, db: Database, id_factory: Optional[Callable[[int], str]] = None):
         self.db = db
+        # Deterministic id generation for replay (README §13). The default uses
+        # uuid4 for standalone use; the environment injects a seeded factory so
+        # the same seed + actions reproduce identical record ids.
+        self._id_factory: Callable[[int], str] = id_factory or (
+            lambda n: uuid.uuid4().hex[:n]
+        )
         self._tools: Dict[str, Callable[..., ToolResult]] = {
             "orders.query": self.orders_query,
             "orders.cancel": self.orders_cancel,
@@ -217,6 +223,9 @@ class MerchantAPISurface:
         if not tool:
             return self._error("unknown_tool", f"Unknown Merchant API tool: {name}")
         return tool(**kwargs)
+
+    def _new_id(self, n: int = 10) -> str:
+        return self._id_factory(n)
 
     def orders_query(
         self,
@@ -382,7 +391,7 @@ class MerchantAPISurface:
             if not order:
                 return self._error("not_found", f"Order not found: {order_id}")
             refund = Refund(
-                id=f"gid://shopify/Refund/{uuid.uuid4().hex[:10]}",
+                id=f"gid://shopify/Refund/{self._new_id(10)}",
                 order_id=order_id,
                 total_refunded=Decimal(str(amount)),
                 reason=reason,
@@ -448,7 +457,7 @@ class MerchantAPISurface:
     ) -> ToolResult:
         with self.db.session() as session:
             discount = DiscountCode(
-                id=f"gid://shopify/DiscountCode/{uuid.uuid4().hex[:10]}",
+                id=f"gid://shopify/DiscountCode/{self._new_id(10)}",
                 code=code,
                 discount_type=discount_type,
                 value=Decimal(str(value)),
@@ -487,7 +496,7 @@ class MerchantAPISurface:
             if not ticket:
                 return self._error("not_found", f"Ticket not found: {ticket_id}")
             message = SupportMessage(
-                id=f"msg-{uuid.uuid4().hex[:8]}",
+                id=f"msg-{self._new_id(8)}",
                 ticket_id=ticket_id,
                 sender_type="AGENT",
                 body=body,
@@ -513,7 +522,7 @@ class MerchantAPISurface:
             ticket.status = "PENDING"
             ticket.updated_at = datetime.now(timezone.utc)
             message = SupportMessage(
-                id=f"msg-{uuid.uuid4().hex[:8]}",
+                id=f"msg-{self._new_id(8)}",
                 ticket_id=ticket_id,
                 sender_type="SYSTEM",
                 body=f"Escalated: {reason}",
@@ -612,7 +621,7 @@ class MerchantAPISurface:
                     "Returns can only be requested for fulfilled orders",
                 )
             ret = Return(
-                id=f"gid://shopify/Return/{uuid.uuid4().hex[:10]}",
+                id=f"gid://shopify/Return/{self._new_id(10)}",
                 order_id=order_id,
                 customer_id=order.customer_id,
                 return_reason=return_reason,

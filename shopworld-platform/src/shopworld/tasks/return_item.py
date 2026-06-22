@@ -79,7 +79,10 @@ def create_return_task(
         "created_at": datetime.now(timezone.utc) - timedelta(hours=6),
         "sla_deadline": datetime.now(timezone.utc) + timedelta(hours=18),
     }
-    store_data["support_tickets"].append(ticket)
+    # Focus the support inbox on this scenario's ticket so the episode isolates
+    # one state-dependent workflow (README §8). The store still carries its
+    # full order/customer/inventory state.
+    store_data["support_tickets"] = [ticket]
 
     hidden_state = {
         "customer_profiles": {

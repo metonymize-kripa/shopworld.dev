@@ -1,11 +1,10 @@
 """Shopify Admin simulator — models and canonical GraphQL schema.
 
-The canonical GraphQL implementation lives in ``graphql_api``:
+The canonical (and only) GraphQL implementation lives in ``graphql_api``:
 
     from shopworld.apps.shopify_admin.graphql_api.schema import build_schema, ShopWorldGraphQLV2
 
-``ShopWorldGraphQL`` (the original single-file implementation) is still
-importable for compatibility but will be removed in a future release.
+The original single-file ``graphql.py`` implementation has been removed.
 """
 
 from shopworld.apps.shopify_admin.models import (

@@ -53,7 +53,10 @@ def create_cancellation_task(
         "created_at": datetime.now(timezone.utc) - timedelta(hours=1),
         "sla_deadline": datetime.now(timezone.utc) + timedelta(hours=23),
     }
-    store_data["support_tickets"].append(ticket)
+    # Focus the support inbox on this scenario's ticket so the episode isolates
+    # one state-dependent workflow (README §8). The store still carries its
+    # full order/customer/inventory state.
+    store_data["support_tickets"] = [ticket]
 
     # Hidden state reflects whether cancellation is valid
     can_cancel = fulfillment_state in ("UNFULFILLED", "PARTIAL")

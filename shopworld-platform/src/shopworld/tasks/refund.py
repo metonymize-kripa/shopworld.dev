@@ -73,7 +73,10 @@ def create_refund_task(
         "created_at": datetime.now(timezone.utc) - timedelta(hours=4),
         "sla_deadline": datetime.now(timezone.utc) + timedelta(hours=20),
     }
-    store_data["support_tickets"].append(ticket)
+    # Focus the support inbox on this scenario's ticket so the episode isolates
+    # one state-dependent workflow (README §8). The store still carries its
+    # full order/customer/inventory state.
+    store_data["support_tickets"] = [ticket]
 
     if high_fraud:
         expected_outcome = "flagged_for_review"

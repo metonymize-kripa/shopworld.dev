@@ -55,7 +55,10 @@ def create_address_change_task(
         "created_at": datetime.now(timezone.utc) - timedelta(hours=3),
         "sla_deadline": datetime.now(timezone.utc) + timedelta(hours=21),
     }
-    store_data["support_tickets"].append(ticket)
+    # Focus the support inbox on this scenario's ticket so the episode isolates
+    # one state-dependent workflow (README §8). The store still carries its
+    # full order/customer/inventory state.
+    store_data["support_tickets"] = [ticket]
 
     # Determine what the correct outcome is
     safe_to_update = fulfillment_state == "UNFULFILLED" and not label_created
