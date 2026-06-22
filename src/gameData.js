@@ -1,7 +1,7 @@
-// ── Drop Day game data ──────────────────────────────────────────
-// The store sells a fixed catalog. Customers arrive with *ambiguous*
-// intent (a vibe, a recipient, a budget) and you ship one product.
-// Right read → profit + rep. Wrong read → refund, sometimes a chargeback.
+// ── ShopWorld Sprint simulator data ──────────────────────────────────────────
+// The demo is a compact agentic-commerce loop: infer customer intent,
+// choose a safe fulfillment action, and preserve cash, reputation, and stock.
+// Correct judgment → margin + trust. Unsafe actions → refunds and trust loss.
 
 export const CATALOG = [
   { id: 'mug',     name: 'Speckled Mug',        emoji: '☕️', cost: 4,  price: 16, tags: ['cozy','home','gift','calm'] },

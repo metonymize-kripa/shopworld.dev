@@ -28,8 +28,8 @@ _Date reviewed: 2026-06-18_
 
 ## Architecture decisions made
 
-- The repository is intentionally a monorepo with two workstreams: the Drop Day Vite app and the Python ShopWorld platform.
-- Drop Day remains a compact public-facing demo/marketing app; the Python package owns deterministic agent evaluation.
+- The repository is intentionally a monorepo with two workstreams: the root Agent Sprint Vite demo and the Python ShopWorld platform.
+- Agent Sprint remains a compact public-facing demo/marketing app; the Python package owns deterministic agent evaluation.
 - `shopworld-platform/src/shopworld/apps/shopify_admin/graphql_api/` should become the canonical Shopify-like GraphQL implementation; older overlapping modules should be deprecated only after behavior is migrated and tested.
 - Platform implementation should prioritize one deterministic end-to-end simulator/evaluation vertical slice before adding more API breadth.
 
