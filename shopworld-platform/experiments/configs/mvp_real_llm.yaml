@@ -1,0 +1,25 @@
+# Real-model head-to-head: milli.run vs a frontier LLM agent.
+#
+# Unlike mvp_30.yaml (which runs the offline ScriptedLLMClient stand-in), this
+# config puts milli.run against a real model through the AnthropicClient adapter.
+#
+# Prerequisites:
+#   pip install anthropic
+#   export ANTHROPIC_API_KEY=sk-ant-...
+#   export SHOPWORLD_LLM_MODEL=claude-sonnet-4-6   # optional; this is the default
+#
+# Run:
+#   python experiments/run_benchmark.py --config experiments/configs/mvp_real_llm.yaml \
+#       --out experiments/reports/results_real_llm.json
+#
+# If the SDK or key is missing, llm_agent_anthropic is skipped (not fatal) and you
+# get a milli_run-only run. See docs/go-to-market/BENCHMARK_REAL_MODEL_RUN.md before
+# publishing any figure from this — the scenario set still needs hardening.
+
+agents:
+  - milli_run
+  - llm_agent_anthropic
+
+seeds: [1, 2, 3]
+
+max_steps: 25

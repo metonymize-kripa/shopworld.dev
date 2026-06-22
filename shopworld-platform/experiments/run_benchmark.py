@@ -54,6 +54,26 @@ def build_agent_registry(names: List[str]) -> Dict[str, Callable[[], Agent]]:
                 registry["llm_agent"] = LLMAgent
             except Exception as exc:  # noqa: BLE001
                 print(f"[skip] llm_agent unavailable: {exc}", file=sys.stderr)
+        elif name in ("llm_agent_anthropic", "llm_agent_real"):
+            # Real frontier model under test (not the offline ScriptedLLMClient).
+            # Requires `pip install anthropic` and ANTHROPIC_API_KEY. Model is
+            # configurable via SHOPWORLD_LLM_MODEL. We construct one client now to
+            # validate prerequisites and skip (not abort) if they are missing.
+            try:
+                import os
+
+                from llm_agent import LLMAgent
+                from llm_agent.client import AnthropicClient
+
+                model = os.environ.get("SHOPWORLD_LLM_MODEL", "claude-sonnet-4-6")
+                AnthropicClient(model=model)  # validate SDK + API key up front
+                registry[name] = lambda model=model: LLMAgent(client=AnthropicClient(model=model))
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"[skip] {name} unavailable (need `pip install anthropic` + "
+                    f"ANTHROPIC_API_KEY): {exc}",
+                    file=sys.stderr,
+                )
         else:
             print(f"[skip] unknown agent: {name}", file=sys.stderr)
     return registry
