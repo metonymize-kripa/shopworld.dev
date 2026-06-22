@@ -8,7 +8,7 @@ Scope enforcement is checked before any DB write.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import List, Optional
 
@@ -119,8 +119,8 @@ def resolve_product_create(
         vendor=input.vendor,
         status=input.status,
         tags=input.tags or [],
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     session.add(product)
     session.commit()
@@ -164,7 +164,7 @@ def resolve_product_update(
     if input.product_type is not None:
         product.product_type = input.product_type
 
-    product.updated_at = datetime.now(UTC)
+    product.updated_at = datetime.now(timezone.utc)
     session.add(product)
     session.commit()
     session.refresh(product)
@@ -220,7 +220,7 @@ def resolve_product_variant_update(
     if input.requires_shipping is not None:
         variant.requires_shipping = input.requires_shipping
 
-    variant.updated_at = datetime.now(UTC)
+    variant.updated_at = datetime.now(timezone.utc)
     session.add(variant)
     session.commit()
     session.refresh(variant)

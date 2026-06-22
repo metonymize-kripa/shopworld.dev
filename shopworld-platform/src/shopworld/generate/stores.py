@@ -1,7 +1,7 @@
 """Store seed data generator for ShopWorld."""
 
 import random
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -117,8 +117,8 @@ class StoreSeeder:
             "status": "ACTIVE",
             "price_range_min": Decimal("29.99"),
             "price_range_max": Decimal("29.99"),
-            "created_at": datetime.now(UTC) - timedelta(days=self.rng.randint(30, 365)),
-            "updated_at": datetime.now(UTC) - timedelta(days=self.rng.randint(1, 30)),
+            "created_at": datetime.now(timezone.utc) - timedelta(days=self.rng.randint(30, 365)),
+            "updated_at": datetime.now(timezone.utc) - timedelta(days=self.rng.randint(1, 30)),
         }
         
         variants = []
@@ -174,7 +174,7 @@ class StoreSeeder:
                 "orders_count": self.rng.randint(0, 10),
                 "total_spent": Decimal(str(self.rng.uniform(0, 500))),
                 "state": "ENABLED",
-                "created_at": datetime.now(UTC) - timedelta(days=self.rng.randint(30, 365)),
+                "created_at": datetime.now(timezone.utc) - timedelta(days=self.rng.randint(30, 365)),
             }
             customers.append(customer)
         
@@ -190,7 +190,7 @@ class StoreSeeder:
         order_id = f"gid://shopify/Order/{index+1}"
         customer_id = self.rng.choice(customer_ids)
         
-        created_at = datetime.now(UTC) - timedelta(days=self.rng.randint(1, 60))
+        created_at = datetime.now(timezone.utc) - timedelta(days=self.rng.randint(1, 60))
         
         # Determine order status
         status_roll = self.rng.random()
@@ -259,7 +259,7 @@ class StoreSeeder:
         tickets = []
         
         # Find unfulfilled orders older than 7 days
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         delayed_orders = [
             o for o in orders
             if o.get("display_fulfillment_status") == "UNFULFILLED"

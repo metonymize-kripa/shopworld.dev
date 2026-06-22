@@ -9,7 +9,7 @@ most relevant to operational scenarios.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import List, Optional
 
@@ -142,8 +142,8 @@ def resolve_discount_code_basic_create(
         status="ACTIVE",
         starts_at=starts_at,
         ends_at=ends_at,
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     session.add(discount)
     session.commit()
@@ -190,7 +190,7 @@ def resolve_discount_code_update(
             )
         discount.status = code_discount.status
 
-    discount.updated_at = datetime.now(UTC)
+    discount.updated_at = datetime.now(timezone.utc)
     session.add(discount)
     session.commit()
     session.refresh(discount)

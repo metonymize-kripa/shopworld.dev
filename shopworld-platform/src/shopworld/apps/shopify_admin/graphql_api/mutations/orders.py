@@ -6,7 +6,7 @@ fulfillmentCreateV2.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import List, Optional
 
@@ -173,7 +173,7 @@ def resolve_order_update(
     if input.email is not None:
         order.email = input.email
 
-    order.updated_at = datetime.now(UTC)
+    order.updated_at = datetime.now(timezone.utc)
     session.add(order)
     session.commit()
     session.refresh(order)
@@ -192,8 +192,8 @@ def resolve_order_close(info: Info, id: str) -> OrderClosePayload:
     if not order:
         return OrderClosePayload(order=None, user_errors=[UserError(field=["id"], message="Order not found")])
 
-    order.closed_at = datetime.now(UTC)
-    order.updated_at = datetime.now(UTC)
+    order.closed_at = datetime.now(timezone.utc)
+    order.updated_at = datetime.now(timezone.utc)
     session.add(order)
     session.commit()
     session.refresh(order)
@@ -228,11 +228,11 @@ def resolve_order_cancel(
             user_errors=[UserError(field=["id"], message="Order is already cancelled")],
         )
 
-    order.cancelled_at = datetime.now(UTC)
+    order.cancelled_at = datetime.now(timezone.utc)
     order.cancel_reason = input.reason
     order.display_financial_status = "VOIDED"
     order.display_fulfillment_status = "UNFULFILLED"
-    order.updated_at = datetime.now(UTC)
+    order.updated_at = datetime.now(timezone.utc)
     session.add(order)
     session.commit()
     session.refresh(order)
@@ -281,14 +281,14 @@ def resolve_refund_create(
         note=input.note,
         reason=input.reason,
         restock=input.restock,
-        created_at=datetime.now(UTC),
+        created_at=datetime.now(timezone.utc),
     )
     session.add(refund)
 
     order.display_financial_status = (
         "PARTIALLY_REFUNDED" if refund_amount < order.total_price else "REFUNDED"
     )
-    order.updated_at = datetime.now(UTC)
+    order.updated_at = datetime.now(timezone.utc)
     session.add(order)
     session.commit()
     session.refresh(order)
@@ -322,14 +322,14 @@ def resolve_fulfillment_create(
         tracking_company=input.tracking_company,
         tracking_url=input.tracking_url,
         status="SUCCESS" if input.tracking_number else "PENDING",
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     session.add(fulfillment)
 
     # Update order fulfillment status
     order.display_fulfillment_status = "FULFILLED"
-    order.updated_at = datetime.now(UTC)
+    order.updated_at = datetime.now(timezone.utc)
     session.add(order)
     session.commit()
     session.refresh(fulfillment)

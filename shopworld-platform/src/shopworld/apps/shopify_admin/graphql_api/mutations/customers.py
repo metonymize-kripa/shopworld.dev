@@ -9,7 +9,7 @@ Customers — the three most common tag targets in operational workflows.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import List, Optional
 
 import strawberry
@@ -128,8 +128,8 @@ def resolve_customer_create(
         last_name=input.last_name,
         tags=input.tags or [],
         note=input.note,
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     session.add(customer)
     session.commit()
@@ -176,7 +176,7 @@ def resolve_customer_update(
             )
         customer.state = input.state
 
-    customer.updated_at = datetime.now(UTC)
+    customer.updated_at = datetime.now(timezone.utc)
     session.add(customer)
     session.commit()
     session.refresh(customer)
@@ -206,7 +206,7 @@ def resolve_tags_add(
     existing = list(obj.tags or [])
     new_tags = [t for t in tags if t not in existing]
     obj.tags = existing + new_tags
-    obj.updated_at = datetime.now(UTC)
+    obj.updated_at = datetime.now(timezone.utc)
     session.add(obj)
     session.commit()
 
@@ -233,7 +233,7 @@ def resolve_tags_remove(
         )
 
     obj.tags = [t for t in (obj.tags or []) if t not in tags]
-    obj.updated_at = datetime.now(UTC)
+    obj.updated_at = datetime.now(timezone.utc)
     session.add(obj)
     session.commit()
 

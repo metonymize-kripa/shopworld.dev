@@ -3,7 +3,7 @@
 import random
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 
 
@@ -133,6 +133,6 @@ class SupplierSimulator:
         po = self.pos.get(po_id)
         if po and po.status == POStatus.DRAFT:
             po.status = POStatus.SUBMITTED
-            po.submitted_at = datetime.now(UTC)
+            po.submitted_at = datetime.now(timezone.utc)
             return True
         return False

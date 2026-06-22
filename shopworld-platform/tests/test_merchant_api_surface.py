@@ -23,10 +23,14 @@ def test_tool_registry_matches_initial_merchant_api_contract():
         "customers.tag",
         "fulfillments.query",
         "fulfillments.cancel",
+        "shipments.query",
         "inventory.query",
         "inventory.adjust",
+        "inventory.reserve",
         "refunds.create",
         "refunds.query",
+        "returns.create",
+        "returns.query",
         "products.query",
         "products.update",
         "discounts.create",
@@ -144,3 +148,86 @@ def test_environment_step_executes_dotted_merchant_api_tool():
     messages = env._get_current_state()["support_messages"]
     assert any(message["ticket_id"] == ticket["id"] for message in messages)
     assert env.hidden_state["tool_results"][-1]["tool"] == "tickets.reply"
+
+
+def test_shipments_query_returns_tracking_fields():
+    surface = seeded_surface()
+    result = surface.call("shipments.query")
+    assert result.ok
+    # Shipments view exposes tracking fields; verified on any present record
+    for shipment in result.data:
+        assert "tracking_number" in shipment
+        assert "tracking_company" in shipment
+        assert "display_status" in shipment
+        assert "order_id" in shipment
+
+
+def test_inventory_reserve_decrements_available_and_increments_reserved():
+    surface = seeded_surface()
+    levels = surface.call("inventory.query").data
+    if not levels:
+        return  # skip if seed has no inventory
+    level = levels[0]
+    item_id = level["inventory_item_id"]
+    loc_id = level["location_id"]
+    available_before = level["available"]
+    reserved_before = level["reserved"] or 0
+
+    result = surface.call("inventory.reserve", inventory_item_id=item_id, location_id=loc_id, quantity=1)
+    assert result.ok
+    assert result.data["available"] == available_before - 1
+    assert result.data["reserved"] == reserved_before + 1
+
+
+def test_inventory_reserve_rejects_quantity_exceeding_available():
+    surface = seeded_surface()
+    levels = surface.call("inventory.query").data
+    if not levels:
+        return
+    level = levels[0]
+    item_id = level["inventory_item_id"]
+    loc_id = level["location_id"]
+    huge = level["available"] + 9999
+
+    result = surface.call("inventory.reserve", inventory_item_id=item_id, location_id=loc_id, quantity=huge)
+    assert not result.ok
+    assert result.errors[0]["code"] == "insufficient_inventory"
+
+
+def test_returns_create_and_query():
+    surface = seeded_surface()
+    # Find a fulfilled order to return
+    orders = surface.call("orders.query").data
+    fulfilled = [o for o in orders if o["fulfillment_status"] == "FULFILLED"]
+    if not fulfilled:
+        # Seed has no fulfilled orders; mark one via DB to satisfy the guard
+        from shopworld.apps.shopify_admin.models import Order as _Order
+        order_id = orders[0]["id"]
+        with surface.db.session() as s:
+            o = s.get(_Order, order_id)
+            o.display_fulfillment_status = "FULFILLED"
+            s.add(o)
+            s.commit()
+    else:
+        order_id = fulfilled[0]["id"]
+
+    ret = surface.call("returns.create", order_id=order_id, return_reason="WRONG_ITEM")
+    assert ret.ok
+    assert ret.data["order_id"] == order_id
+    assert ret.data["status"] == "REQUESTED"
+    assert ret.data["return_reason"] == "WRONG_ITEM"
+
+    listing = surface.call("returns.query", order_id=order_id)
+    assert listing.ok
+    assert any(r["id"] == ret.data["id"] for r in listing.data)
+
+
+def test_returns_create_rejects_unfulfilled_order():
+    surface = seeded_surface()
+    orders = surface.call("orders.query").data
+    unfulfilled = [o for o in orders if o["fulfillment_status"] not in ("FULFILLED", "PARTIAL")]
+    if not unfulfilled:
+        return  # all orders fulfilled in this seed; skip
+    result = surface.call("returns.create", order_id=unfulfilled[0]["id"], return_reason="CUSTOMER_CHANGED_MIND")
+    assert not result.ok
+    assert result.errors[0]["code"] == "policy_violation"

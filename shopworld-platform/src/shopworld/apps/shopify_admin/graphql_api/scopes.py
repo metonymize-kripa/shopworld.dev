@@ -95,6 +95,13 @@ OPERATION_SCOPES: Dict[str, FrozenSet[str]] = {
     "refundCreate":          frozenset([Scope.WRITE_ORDERS]),
     "discountCodeBasicCreate": frozenset([Scope.WRITE_DISCOUNTS, Scope.WRITE_PRICE_RULES]),
     "discountCodeUpdate":    frozenset([Scope.WRITE_DISCOUNTS, Scope.WRITE_PRICE_RULES]),
+    # Shipments (queried via fulfillment/tracking data)
+    "shipments":             frozenset([Scope.READ_ORDERS, Scope.READ_FULFILLMENTS]),
+    # Inventory reservation
+    "inventoryReserveQuantities": frozenset([Scope.WRITE_INVENTORY]),
+    # Returns (physical item returns, distinct from financial refunds)
+    "returns":               frozenset([Scope.READ_ORDERS, Scope.READ_ALL_ORDERS]),
+    "returnCreate":          frozenset([Scope.WRITE_ORDERS]),
 }
 
 # Predefined scope bundles agents can be granted (mirrors authority levels)

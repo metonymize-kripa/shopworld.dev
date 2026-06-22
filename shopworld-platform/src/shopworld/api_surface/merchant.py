@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Callable, Dict, List, Optional
 
@@ -25,6 +25,7 @@ from shopworld.apps.shopify_admin.models import (
     Order,
     Product,
     Refund,
+    Return,
     SupportMessage,
     SupportTicket,
 )
@@ -132,6 +133,33 @@ MERCHANT_TOOL_AUTHORIZATIONS: Dict[str, ToolAuthorization] = {
     "policy.explain": ToolAuthorization(
         "shop", frozenset(), "read", "Explain merchant policy snippets"
     ),
+    # Shipments (tracking view of fulfillments)
+    "shipments.query": ToolAuthorization(
+        "shipments",
+        frozenset({Scope.READ_ORDERS, Scope.READ_FULFILLMENTS}),
+        "read",
+        "Query shipment tracking status for fulfillments",
+    ),
+    # Inventory reservation
+    "inventory.reserve": ToolAuthorization(
+        "inventoryReserveQuantities",
+        frozenset({Scope.WRITE_INVENTORY}),
+        "write",
+        "Reserve inventory quantity to prevent overselling",
+    ),
+    # Physical item returns (distinct from financial refunds)
+    "returns.create": ToolAuthorization(
+        "returnCreate",
+        frozenset({Scope.WRITE_ORDERS}),
+        "write",
+        "Create a return request for an order line item",
+    ),
+    "returns.query": ToolAuthorization(
+        "returns",
+        frozenset({Scope.READ_ORDERS, Scope.READ_ALL_ORDERS}),
+        "read",
+        "List return requests",
+    ),
 }
 
 
@@ -174,6 +202,10 @@ class MerchantAPISurface:
             "tickets.escalate": self.tickets_escalate,
             "policy.lookup": self.policy_lookup,
             "policy.explain": self.policy_lookup,
+            "shipments.query": self.shipments_query,
+            "inventory.reserve": self.inventory_reserve,
+            "returns.create": self.returns_create,
+            "returns.query": self.returns_query,
         }
 
     @property
@@ -214,7 +246,7 @@ class MerchantAPISurface:
                 order.note = note
             if tags is not None:
                 order.tags = tags
-            order.updated_at = datetime.now(UTC)
+            order.updated_at = datetime.now(timezone.utc)
             session.add(order)
             session.commit()
             session.refresh(order)
@@ -229,10 +261,10 @@ class MerchantAPISurface:
                 return self._error(
                     "policy_violation", "Fulfilled orders cannot be cancelled through this tool"
                 )
-            order.cancelled_at = datetime.now(UTC)
+            order.cancelled_at = datetime.now(timezone.utc)
             order.cancel_reason = reason
             order.display_financial_status = "VOIDED"
-            order.updated_at = datetime.now(UTC)
+            order.updated_at = datetime.now(timezone.utc)
             session.add(order)
             session.commit()
             session.refresh(order)
@@ -262,7 +294,7 @@ class MerchantAPISurface:
                 customer.note = note
             if tags is not None:
                 customer.tags = tags
-            customer.updated_at = datetime.now(UTC)
+            customer.updated_at = datetime.now(timezone.utc)
             session.add(customer)
             session.commit()
             session.refresh(customer)
@@ -298,7 +330,7 @@ class MerchantAPISurface:
                     "policy_violation", "Delivered/successful fulfillments cannot be cancelled"
                 )
             fulfillment.status = "CANCELLED"
-            fulfillment.updated_at = datetime.now(UTC)
+            fulfillment.updated_at = datetime.now(timezone.utc)
             session.add(fulfillment)
             session.commit()
             session.refresh(fulfillment)
@@ -331,7 +363,7 @@ class MerchantAPISurface:
             if not level:
                 return self._error("not_found", "Inventory level not found")
             level.available = max(0, level.available + int(delta))
-            level.updated_at = datetime.now(UTC)
+            level.updated_at = datetime.now(timezone.utc)
             session.add(level)
             session.commit()
             session.refresh(level)
@@ -405,7 +437,7 @@ class MerchantAPISurface:
                 product.status = status
             if description is not None:
                 product.description = description
-            product.updated_at = datetime.now(UTC)
+            product.updated_at = datetime.now(timezone.utc)
             session.add(product)
             session.commit()
             session.refresh(product)
@@ -462,8 +494,8 @@ class MerchantAPISurface:
                 is_internal=internal,
             )
             if not internal and ticket.first_response_at is None:
-                ticket.first_response_at = datetime.now(UTC)
-            ticket.updated_at = datetime.now(UTC)
+                ticket.first_response_at = datetime.now(timezone.utc)
+            ticket.updated_at = datetime.now(timezone.utc)
             session.add(message)
             session.add(ticket)
             session.commit()
@@ -479,7 +511,7 @@ class MerchantAPISurface:
                 return self._error("not_found", f"Ticket not found: {ticket_id}")
             ticket.priority = "URGENT"
             ticket.status = "PENDING"
-            ticket.updated_at = datetime.now(UTC)
+            ticket.updated_at = datetime.now(timezone.utc)
             message = SupportMessage(
                 id=f"msg-{uuid.uuid4().hex[:8]}",
                 ticket_id=ticket_id,
@@ -520,6 +552,87 @@ class MerchantAPISurface:
                 if needle in (p["policy_type"] + " " + p["title"] + " " + p["body"]).lower()
             ][:limit],
         )
+
+    def shipments_query(
+        self, order_id: Optional[str] = None, tracking_number: Optional[str] = None, limit: int = 20
+    ) -> ToolResult:
+        """Return tracking-focused view of fulfillments (shipments)."""
+        with self.db.session() as session:
+            stmt = select(Fulfillment)
+            if order_id:
+                stmt = stmt.where(Fulfillment.order_id == order_id)
+            if tracking_number:
+                stmt = stmt.where(Fulfillment.tracking_number == tracking_number)
+            return ToolResult(
+                True, [self._shipment(f) for f in session.exec(stmt.limit(limit)).all()]
+            )
+
+    def inventory_reserve(
+        self, inventory_item_id: str, location_id: str, quantity: int
+    ) -> ToolResult:
+        """Reserve inventory quantity, preventing it from being sold to other orders."""
+        if quantity <= 0:
+            return self._error("invalid_quantity", "Reserve quantity must be positive")
+        with self.db.session() as session:
+            level = session.exec(
+                select(InventoryLevel).where(
+                    InventoryLevel.inventory_item_id == inventory_item_id,
+                    InventoryLevel.location_id == location_id,
+                )
+            ).first()
+            if not level:
+                return self._error("not_found", "Inventory level not found")
+            if level.available < quantity:
+                return self._error(
+                    "insufficient_inventory",
+                    f"Cannot reserve {quantity}: only {level.available} available",
+                )
+            level.available -= quantity
+            level.reserved = (level.reserved or 0) + quantity
+            level.updated_at = datetime.now(timezone.utc)
+            session.add(level)
+            session.commit()
+            session.refresh(level)
+            return ToolResult(True, self._inventory_level(level))
+
+    def returns_create(
+        self,
+        order_id: str,
+        return_reason: str,
+        return_reason_note: Optional[str] = None,
+    ) -> ToolResult:
+        """Create a return request for an order. Guards final-sale restriction."""
+        with self.db.session() as session:
+            order = session.get(Order, order_id)
+            if not order:
+                return self._error("not_found", f"Order not found: {order_id}")
+            if order.display_fulfillment_status not in ("FULFILLED", "PARTIAL"):
+                return self._error(
+                    "policy_violation",
+                    "Returns can only be requested for fulfilled orders",
+                )
+            ret = Return(
+                id=f"gid://shopify/Return/{uuid.uuid4().hex[:10]}",
+                order_id=order_id,
+                customer_id=order.customer_id,
+                return_reason=return_reason,
+                return_reason_note=return_reason_note,
+                status="REQUESTED",
+            )
+            session.add(ret)
+            session.commit()
+            session.refresh(ret)
+            return ToolResult(True, self._return(ret))
+
+    def returns_query(self, order_id: Optional[str] = None, limit: int = 20) -> ToolResult:
+        """List return requests, optionally filtered by order."""
+        with self.db.session() as session:
+            stmt = select(Return)
+            if order_id:
+                stmt = stmt.where(Return.order_id == order_id)
+            return ToolResult(
+                True, [self._return(r) for r in session.exec(stmt.limit(limit)).all()]
+            )
 
     def _error(self, code: str, message: str) -> ToolResult:
         return ToolResult(False, errors=[{"code": code, "message": message}])
@@ -619,4 +732,32 @@ class MerchantAPISurface:
             "sender_type": m.sender_type,
             "body": m.body,
             "is_internal": m.is_internal,
+        }
+
+    def _shipment(self, f: Fulfillment) -> Dict[str, Any]:
+        """Tracking-focused view of a Fulfillment record."""
+        return {
+            "id": f.id,
+            "order_id": f.order_id,
+            "status": f.status,
+            "display_status": f.display_status,
+            "tracking_number": f.tracking_number,
+            "tracking_url": f.tracking_url,
+            "tracking_company": f.tracking_company,
+            "created_at": f.created_at.isoformat(),
+            "delivered_at": f.delivered_at.isoformat() if f.delivered_at else None,
+        }
+
+    def _return(self, r: Return) -> Dict[str, Any]:
+        return {
+            "id": r.id,
+            "order_id": r.order_id,
+            "customer_id": r.customer_id,
+            "status": r.status,
+            "rma_number": r.rma_number,
+            "return_reason": r.return_reason,
+            "return_reason_note": r.return_reason_note,
+            "is_final_sale": r.is_final_sale,
+            "refund_id": r.refund_id,
+            "created_at": r.created_at.isoformat(),
         }

@@ -5,6 +5,56 @@
 Core implementation of the ShopWorld platform is complete, providing the foundational infrastructure for a deterministic RL environment simulating Shopify merchant operations.
 
 
+## 2026-06-22 Update: MVP Scenario Families and Full Tool Contract
+
+Closed the remaining gaps between the codebase and `platform-rnd/README.md` §4, §7, §8, and §10.
+
+### Python 3.10 Compatibility Fix
+
+`datetime.UTC` was added in Python 3.11; the project declared `requires-python = ">=3.10"`. All 12 source files using `datetime.UTC` were updated to `timezone.utc`. All 128 pre-existing tests now pass on Python 3.10.
+
+### Completed: Full Merchant API Surface Tool Contract
+
+Added the 4 tools missing from the README §4 initial contract:
+
+| Tool | Scope | Guard |
+| --- | --- | --- |
+| `shipments.query` | `read_orders` / `read_fulfillments` | Tracking-focused view of `Fulfillment` records |
+| `inventory.reserve` | `write_inventory` | Rejects reservation that exceeds available quantity |
+| `returns.create` | `write_orders` | Rejects return on unfulfilled orders |
+| `returns.query` | `read_orders` / `read_all_orders` | Lists `Return` records by order |
+
+Added `Return` SQLModel (physical return requests, distinct from financial `Refund`). Scopes added to `OPERATION_SCOPES`: `shipments`, `inventoryReserveQuantities`, `returns`, `returnCreate`. `MERCHANT_TOOL_AUTHORIZATIONS` table now matches the full initial contract (25 tools). 5 new tests confirm tool behavior and scope enforcement.
+
+### Completed: MVP Scenario Task Families (README §10)
+
+All five MVP workflow families now have task factory functions:
+
+| Family | File | State Variants |
+| --- | --- | --- |
+| WISMO | `tasks/wismo.py` | cooperative / angry / vip customer |
+| Cancellation | `tasks/cancellation.py` | UNFULFILLED (cancel ok) / FULFILLED (block + explain) |
+| Address change | `tasks/address_change.py` | pre-label / label-created / already-shipped |
+| Refund | `tasks/refund.py` | in-window + low fraud / out-of-window / high fraud flag |
+| Return | `tasks/return_item.py` | in-window / out-of-window / final-sale block |
+
+Each factory encodes state-dependent correct behavior in `hidden_state` and `success_conditions`, matching the README §8 table. 18 new scenario tests verify ticket seeding, guard behavior, and hidden-state isolation.
+
+**Test count: 151 passing (was 0 due to import error; fixed to 128, then 151).**
+
+### Decisions Captured
+
+1. **`Return` is separate from `Refund`** — Return tracks physical logistics (status: REQUESTED → IN_TRANSIT → RECEIVED). Refund tracks the financial credit. They are linked via `Return.refund_id` once a refund is issued.
+2. **`shipments.query` is a projection of `Fulfillment`** — returns tracking-focused fields (`tracking_number`, `tracking_url`, `display_status`, `delivered_at`). Not a separate table. Follows the pattern from Shopify's Admin API where shipments are surfaced through fulfillment objects.
+3. **`inventory.reserve` subtracts from `available` and adds to `reserved`** — matching Shopify's on-hand / committed / available distinction.
+4. **Hidden-state guard: final-sale flag never surfaces to agent-visible tools** — `is_final_sale` lives only in `hidden_state`; the agent must call `policy.lookup` to discover the constraint.
+
+### Still Remaining (from this vertical slice)
+
+- Add MCP/HTTP transports on top of the same facade instead of creating a second API implementation.
+
+---
+
 ## 2026-06-22 Update: Merchant API Surface Vertical Slice
 
 Implemented a first concrete agent-visible Merchant API Surface in `shopworld.api_surface` and kept it separate from hidden simulator/evaluator state. The surface now exposes the initial contract from `platform-rnd/README.md` for orders, customers, fulfillments, inventory, refunds, products, discounts, tickets, and policy lookup/explanation.
@@ -24,9 +74,9 @@ Implemented a first concrete agent-visible Merchant API Surface in `shopworld.ap
 - `ShopWorldEnv` now derives dotted Merchant API scope checks and available-action filtering from the authorization table instead of a separate coarse hand-maintained mapping.
 - Unit coverage proving the registry includes the contract tools, every tool maps to scope enforcement, tool-specific scopes can be narrower than shared GraphQL operations, ticket replies do not leak hidden tracking state, order lookup works through the facade, fulfilled orders cannot be cancelled through the exposed tool, and environment steps execute dotted ticket tools.
 
-### Still Remaining
+### Still Remaining (from original vertical slice — now completed above)
 
-- Add returns and shipment-specific tool families once the supporting models are promoted from post-MVP stubs.
+- ~~Add returns and shipment-specific tool families~~ — done (`returns.create`, `returns.query`, `shipments.query`, `inventory.reserve`).
 - Add MCP/HTTP transports on top of the same facade instead of creating a second API implementation.
 
 ## Completed Components

@@ -8,7 +8,7 @@ Each entry identifies the owner by ownerType + ownerId, namespace, and key.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import List
 
 import strawberry
@@ -76,7 +76,7 @@ def resolve_metafields_set(
         if existing:
             existing.value = mf_input.value
             existing.type = mf_input.type
-            existing.updated_at = datetime.now(UTC)
+            existing.updated_at = datetime.now(timezone.utc)
             session.add(existing)
             session.flush()
             results.append(_to_metafield_type(existing))
@@ -89,8 +89,8 @@ def resolve_metafields_set(
                 type=mf_input.type,
                 owner_type=mf_input.owner_type,
                 owner_id=mf_input.owner_id,
-                created_at=datetime.now(UTC),
-                updated_at=datetime.now(UTC),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             )
             session.add(new_mf)
             session.flush()

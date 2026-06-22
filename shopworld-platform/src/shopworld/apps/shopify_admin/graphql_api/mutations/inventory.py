@@ -7,7 +7,7 @@ inventoryItemUpdate updates InventoryItem metadata (tracked, cost, HScode, etc.)
 
 from __future__ import annotations
 
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import List, Optional
 
 import strawberry
@@ -119,7 +119,7 @@ def resolve_inventory_adjust_quantities(
             )
 
         level.available = new_qty
-        level.updated_at = datetime.now(UTC)
+        level.updated_at = datetime.now(timezone.utc)
         session.add(level)
         adjusted.append(_to_inventory_level_type(level))
 
