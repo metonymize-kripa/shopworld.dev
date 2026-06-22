@@ -4,6 +4,30 @@
 
 Core implementation of the ShopWorld platform is complete, providing the foundational infrastructure for a deterministic RL environment simulating Shopify merchant operations.
 
+
+## 2026-06-22 Update: Merchant API Surface Vertical Slice
+
+Implemented a first concrete agent-visible Merchant API Surface in `shopworld.api_surface` and kept it separate from hidden simulator/evaluator state. The surface now exposes the initial contract from `platform-rnd/README.md` for orders, customers, fulfillments, inventory, refunds, products, discounts, tickets, and policy lookup/explanation.
+
+### Decisions Captured
+
+1. **API surface is a Python tool facade first** - The first implementation is a deterministic in-process facade over the canonical SQLModel database so benchmark runners and tests can exercise tool semantics before adding MCP/HTTP transports.
+2. **No hidden state leakage** - Tool serializers only return merchant-visible fields; scenario hidden state, evaluator labels, expected actions, rewards, and future events remain outside the facade.
+3. **Policy checks live at mutation boundaries** - Cancellation and fulfillment cancellation now reject already-fulfilled/successful states at the tool boundary, matching the active contract that agents must operate through guarded merchant tools.
+4. **Stable normalized tool result** - Every tool returns a `ToolResult` with `ok`, `data`, and `errors` so LLM agents, milli.run adapters, and the neutral benchmark runner can share one response shape.
+
+### Newly Completed
+
+- `shopworld.api_surface.MerchantAPISurface` with 21 named tools covering the initial Merchant API Surface contract.
+- `ShopWorldEnv.step()` can execute dotted Merchant API tool names through the same facade while preserving legacy action names.
+- Unit coverage proving the registry includes the contract tools, ticket replies do not leak hidden tracking state, order lookup works through the facade, fulfilled orders cannot be cancelled through the exposed tool, and environment steps execute dotted ticket tools.
+
+### Still Remaining
+
+- Promote the current coarse dotted-tool scope mapping into a documented per-tool authorization table with tests for each write/read scope.
+- Add returns and shipment-specific tool families once the supporting models are promoted from post-MVP stubs.
+- Add MCP/HTTP transports on top of the same facade instead of creating a second API implementation.
+
 ## Completed Components
 
 ### Phase 1: Project Structure
