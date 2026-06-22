@@ -1,0 +1,16 @@
+{
+  "description": "Deterministic ShopWorld simulator seed data",
+  "record_counts": {
+    "customers": 50,
+    "inventory_items": 45,
+    "inventory_levels": 90,
+    "locations": 2,
+    "order_line_items": 190,
+    "orders": 100,
+    "product_variants": 45,
+    "products": 10,
+    "support_tickets": 11
+  },
+  "schema_version": 1,
+  "seed": 42
+}
