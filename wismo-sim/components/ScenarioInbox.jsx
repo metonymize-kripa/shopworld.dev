@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { WORKFLOW_LEVELS, STEP_TYPES, SCENARIOS } from '../data.js'
+import { WORKFLOW_LEVELS, STEP_TYPES, SCENARIOS } from '../../packages/shopworld-scenarios/src/wismo/index.js'
 import WismoInfoModal from './WismoInfoModal.jsx'
 
 function StepBar({ steps }) {

@@ -1,4 +1,4 @@
-import { STEP_TYPES } from '../data.js'
+import { STEP_TYPES } from '../../packages/shopworld-scenarios/src/wismo/index.js'
 
 export default function OverviewSection({ scenario, level }) {
   return (
