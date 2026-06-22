@@ -285,6 +285,53 @@ class StoreSeeder:
         return tickets
 
 
+def to_jsonable(value: Any) -> Any:
+    """Convert generated simulator seed data into stable JSON primitives."""
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {key: to_jsonable(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [to_jsonable(item) for item in value]
+    return value
+
+
+def build_simulator_dataset(
+    seed: int = 42,
+    product_count: int = 10,
+    customer_count: int = 50,
+    order_count: int = 100,
+    location_count: int = 2,
+) -> Dict[str, Any]:
+    """Build all generated data needed by the current simulator stack.
+
+    The platform simulators consume a shared commerce snapshot plus latent
+    operational data. Keeping this export deterministic gives local demos,
+    tests, and future task generation a single reproducible data source.
+    """
+    seeder = StoreSeeder(seed=seed)
+    store = seeder.generate_store(
+        product_count=product_count,
+        customer_count=customer_count,
+        order_count=order_count,
+        location_count=location_count,
+    )
+
+    return to_jsonable(
+        {
+            "manifest": {
+                "schema_version": 1,
+                "seed": seed,
+                "description": "Deterministic ShopWorld simulator seed data",
+                "record_counts": {name: len(records) for name, records in store.items()},
+            },
+            "store": store,
+        }
+    )
+
+
 def create_sample_store(seed: int = 42) -> Dict[str, List[Dict[str, Any]]]:
     """Create a sample store with default parameters."""
     seeder = StoreSeeder(seed=seed)

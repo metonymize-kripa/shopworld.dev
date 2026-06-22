@@ -1,4 +1,4 @@
-.PHONY: check app-build app-dev app-preview scenario-build support-sim-build wismo-sim-build platform-sync platform-test platform-lint platform-type platform-check format
+.PHONY: check app-build app-dev app-preview scenario-build support-sim-build wismo-sim-build platform-sync platform-test platform-lint platform-type platform-check platform-simulator-data format
 
 check: app-build scenario-build platform-check
 
@@ -32,6 +32,9 @@ platform-type:
 	cd shopworld-platform && uv run mypy src
 
 platform-check: platform-test platform-lint platform-type
+
+platform-simulator-data:
+	cd shopworld-platform && uv run shopworld export-simulator-data
 
 format:
 	cd shopworld-platform && uv run ruff format src tests

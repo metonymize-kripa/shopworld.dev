@@ -136,6 +136,45 @@ def run(
     console.print(f"Task success: {result.get('task_completion', {}).get('success', False)}")
 
 
+@app.command("export-simulator-data")
+def export_simulator_data(
+    output_dir: Path = typer.Option(
+        Path("data/simulator"),
+        "--output-dir",
+        "-o",
+        help="Directory where simulator seed JSON files should be written",
+    ),
+    seed: int = typer.Option(42, "--seed", "-s", help="Deterministic generator seed"),
+    products: int = typer.Option(10, "--products", help="Number of products to generate"),
+    customers: int = typer.Option(50, "--customers", help="Number of customers to generate"),
+    orders: int = typer.Option(100, "--orders", help="Number of orders to generate"),
+    locations: int = typer.Option(2, "--locations", help="Number of locations to generate"),
+):
+    """Export deterministic seed data needed to build simulator scenarios."""
+    import json
+
+    from shopworld.generate.stores import build_simulator_dataset
+
+    dataset = build_simulator_dataset(
+        seed=seed,
+        product_count=products,
+        customer_count=customers,
+        order_count=orders,
+        location_count=locations,
+    )
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = output_dir / "manifest.json"
+    store_path = output_dir / "commerce_store.json"
+
+    manifest_path.write_text(json.dumps(dataset["manifest"], indent=2, sort_keys=True) + "\n")
+    store_path.write_text(json.dumps(dataset["store"], indent=2, sort_keys=True) + "\n")
+
+    console.print(f"[green]Wrote simulator manifest:[/green] {manifest_path}")
+    console.print(f"[green]Wrote commerce store data:[/green] {store_path}")
+    console.print_json(json.dumps(dataset["manifest"]))
+
+
 def main():
     """Entry point for shopworld CLI."""
     app()
