@@ -16,6 +16,7 @@ from typing import Any, Callable, Dict, List, Optional
 from sqlmodel import select
 
 from shopworld.backend.db import Database
+from shopworld.apps.shopify_admin.graphql_api.scopes import Scope
 from shopworld.apps.shopify_admin.models import (
     Customer,
     DiscountCode,
@@ -27,6 +28,111 @@ from shopworld.apps.shopify_admin.models import (
     SupportMessage,
     SupportTicket,
 )
+
+
+@dataclass(frozen=True)
+class ToolAuthorization:
+    """Documented authorization contract for a Merchant API tool.
+
+    ``required_scopes`` uses OR semantics: an agent needs at least one listed
+    scope. Empty sets represent public/merchant-policy lookups.
+    """
+
+    operation: str
+    required_scopes: frozenset[str]
+    access: str
+    description: str
+
+
+MERCHANT_TOOL_AUTHORIZATIONS: Dict[str, ToolAuthorization] = {
+    "orders.query": ToolAuthorization(
+        "orders", frozenset({Scope.READ_ORDERS, Scope.READ_ALL_ORDERS}), "read", "List orders"
+    ),
+    "orders.cancel": ToolAuthorization(
+        "orderCancel", frozenset({Scope.WRITE_ORDERS}), "write", "Cancel an unfulfilled order"
+    ),
+    "orders.update": ToolAuthorization(
+        "orderUpdate", frozenset({Scope.WRITE_ORDERS}), "write", "Update order notes or tags"
+    ),
+    "customers.query": ToolAuthorization(
+        "customers", frozenset({Scope.READ_CUSTOMERS}), "read", "List customers"
+    ),
+    "customers.update": ToolAuthorization(
+        "customerUpdate", frozenset({Scope.WRITE_CUSTOMERS}), "write", "Update customer fields"
+    ),
+    "customers.tag": ToolAuthorization(
+        "tagsAdd", frozenset({Scope.WRITE_CUSTOMERS}), "write", "Tag a customer"
+    ),
+    "fulfillments.query": ToolAuthorization(
+        "fulfillmentOrders",
+        frozenset({Scope.READ_ORDERS, Scope.READ_FULFILLMENTS}),
+        "read",
+        "List fulfillments",
+    ),
+    "fulfillments.cancel": ToolAuthorization(
+        "fulfillmentCreateV2",
+        frozenset({Scope.WRITE_FULFILLMENTS}),
+        "write",
+        "Cancel a pending fulfillment",
+    ),
+    "inventory.query": ToolAuthorization(
+        "inventoryLevels", frozenset({Scope.READ_INVENTORY}), "read", "List inventory levels"
+    ),
+    "inventory.adjust": ToolAuthorization(
+        "inventoryAdjustQuantities",
+        frozenset({Scope.WRITE_INVENTORY}),
+        "write",
+        "Adjust inventory quantities",
+    ),
+    "refunds.create": ToolAuthorization(
+        "refundCreate", frozenset({Scope.WRITE_ORDERS}), "write", "Create an order refund"
+    ),
+    "refunds.query": ToolAuthorization(
+        "orders", frozenset({Scope.READ_ORDERS, Scope.READ_ALL_ORDERS}), "read", "List refunds"
+    ),
+    "products.query": ToolAuthorization(
+        "products", frozenset({Scope.READ_PRODUCTS}), "read", "List products"
+    ),
+    "products.update": ToolAuthorization(
+        "productUpdate", frozenset({Scope.WRITE_PRODUCTS}), "write", "Update product fields"
+    ),
+    "discounts.create": ToolAuthorization(
+        "discountCodeBasicCreate",
+        frozenset({Scope.WRITE_DISCOUNTS, Scope.WRITE_PRICE_RULES}),
+        "write",
+        "Create a discount code",
+    ),
+    "discounts.query": ToolAuthorization(
+        "discountNodes",
+        frozenset({Scope.READ_DISCOUNTS, Scope.READ_PRICE_RULES}),
+        "read",
+        "List discounts",
+    ),
+    "tickets.query": ToolAuthorization(
+        "orders",
+        frozenset({Scope.READ_ORDERS, Scope.READ_ALL_ORDERS}),
+        "read",
+        "List support tickets visible to support operators",
+    ),
+    "tickets.reply": ToolAuthorization(
+        "orderUpdate",
+        frozenset({Scope.WRITE_ORDERS}),
+        "write",
+        "Reply to a support ticket",
+    ),
+    "tickets.escalate": ToolAuthorization(
+        "orderUpdate",
+        frozenset({Scope.WRITE_ORDERS}),
+        "write",
+        "Escalate a support ticket",
+    ),
+    "policy.lookup": ToolAuthorization(
+        "shop", frozenset(), "read", "Search merchant policy snippets"
+    ),
+    "policy.explain": ToolAuthorization(
+        "shop", frozenset(), "read", "Explain merchant policy snippets"
+    ),
+}
 
 
 @dataclass

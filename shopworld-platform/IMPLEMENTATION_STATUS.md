@@ -19,12 +19,13 @@ Implemented a first concrete agent-visible Merchant API Surface in `shopworld.ap
 ### Newly Completed
 
 - `shopworld.api_surface.MerchantAPISurface` with 21 named tools covering the initial Merchant API Surface contract.
+- Documented `MERCHANT_TOOL_AUTHORIZATIONS` table with per-tool read/write access level, GraphQL operation mapping, and exact accepted scopes for all 21 exposed tools.
 - `ShopWorldEnv.step()` can execute dotted Merchant API tool names through the same facade while preserving legacy action names.
-- Unit coverage proving the registry includes the contract tools, ticket replies do not leak hidden tracking state, order lookup works through the facade, fulfilled orders cannot be cancelled through the exposed tool, and environment steps execute dotted ticket tools.
+- `ShopWorldEnv` now derives dotted Merchant API scope checks and available-action filtering from the authorization table instead of a separate coarse hand-maintained mapping.
+- Unit coverage proving the registry includes the contract tools, every tool maps to scope enforcement, tool-specific scopes can be narrower than shared GraphQL operations, ticket replies do not leak hidden tracking state, order lookup works through the facade, fulfilled orders cannot be cancelled through the exposed tool, and environment steps execute dotted ticket tools.
 
 ### Still Remaining
 
-- Promote the current coarse dotted-tool scope mapping into a documented per-tool authorization table with tests for each write/read scope.
 - Add returns and shipment-specific tool families once the supporting models are promoted from post-MVP stubs.
 - Add MCP/HTTP transports on top of the same facade instead of creating a second API implementation.
 

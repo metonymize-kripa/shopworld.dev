@@ -1,4 +1,6 @@
 from shopworld.api_surface import MerchantAPISurface
+from shopworld.api_surface import MERCHANT_TOOL_AUTHORIZATIONS
+from shopworld.apps.shopify_admin.graphql_api.scopes import OPERATION_SCOPES, ScopeError, check_scope
 from shopworld.environment import ShopWorldEnv
 from shopworld.tasks.wismo import create_wismo_task
 
@@ -36,7 +38,52 @@ def test_tool_registry_matches_initial_merchant_api_contract():
         "policy.explain",
     }
 
-    assert expected_tools.issubset(set(surface.tool_names))
+    assert set(surface.tool_names) == expected_tools
+    assert set(MERCHANT_TOOL_AUTHORIZATIONS) == expected_tools
+
+
+def test_each_merchant_tool_authorization_maps_to_graphql_scope_registry():
+    for tool_name, authorization in MERCHANT_TOOL_AUTHORIZATIONS.items():
+        assert authorization.operation in OPERATION_SCOPES, tool_name
+        assert authorization.required_scopes <= OPERATION_SCOPES[authorization.operation], tool_name
+        assert authorization.access in {"read", "write"}, tool_name
+        assert authorization.description, tool_name
+
+
+def test_every_scoped_merchant_tool_allows_and_denies_by_documented_scope():
+    for tool_name, authorization in MERCHANT_TOOL_AUTHORIZATIONS.items():
+        if not authorization.required_scopes:
+            check_scope(authorization.operation, set())
+            continue
+
+        granted_scope = next(iter(authorization.required_scopes))
+        check_scope(authorization.operation, {granted_scope})
+
+        try:
+            check_scope(authorization.operation, set())
+        except ScopeError:
+            pass
+        else:
+            raise AssertionError(f"{tool_name} should be denied without a documented scope")
+
+
+def test_environment_dotted_tool_scope_map_is_derived_from_authorization_table():
+    for tool_name, authorization in MERCHANT_TOOL_AUTHORIZATIONS.items():
+        assert ShopWorldEnv._TOOL_SCOPE_MAP[tool_name] == authorization.operation
+
+
+def test_environment_enforces_tool_specific_scope_when_graphql_operation_is_broader():
+    env = ShopWorldEnv(enable_tracing=True)
+    env.reset(options={"scopes": ["write_orders"]})
+
+    _, _, _, _, info = env.step(
+        __import__("shopworld.environment", fromlist=["Action"]).Action(
+            tool_name="customers.tag",
+            arguments={"customer_id": "gid://shopify/Customer/missing", "tags": ["vip"]},
+        )
+    )
+
+    assert any("SCOPE:" in violation for violation in info["violations"])
 
 
 def test_ticket_reply_and_order_query_are_agent_visible_without_hidden_state():
