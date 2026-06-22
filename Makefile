@@ -1,6 +1,6 @@
-.PHONY: check app-build app-dev app-preview platform-sync platform-test platform-lint platform-type platform-check format
+.PHONY: check app-build app-dev app-preview scenario-build support-sim-build wismo-sim-build platform-sync platform-test platform-lint platform-type platform-check format
 
-check: app-build platform-check
+check: app-build scenario-build platform-check
 
 app-build:
 	npm run build
@@ -10,6 +10,14 @@ app-dev:
 
 app-preview:
 	npm run preview
+
+scenario-build: support-sim-build wismo-sim-build
+
+support-sim-build:
+	npm --prefix support-sim run build
+
+wismo-sim-build:
+	npm --prefix wismo-sim run build
 
 platform-sync:
 	cd shopworld-platform && uv sync --frozen --all-extras
