@@ -140,7 +140,254 @@ ShopWorld maintains hidden state that agents cannot directly inspect.
 | Chargeback probability | Drives financial risk. |
 | Repeat purchase probability | Drives customer lifetime value. |
 
-## 5. Data and Leakage Rules
+
+## 5. Shopper-Facing Commerce Simulator Capability
+
+ShopWorld also includes a shopper-facing product-discovery benchmark in addition to merchant operations. This capability evaluates whether a shopping agent can reason over imperfect production-like commerce interfaces better than plain search, without exposing hidden catalog truth.
+
+The setup is a **commerce simulator with hidden store truth, a realistic legacy search/data backend, and a constrained agent-facing tool surface that exposes only what a real shopping agent would plausibly get from production APIs**.
+
+```mermaid
+flowchart LR
+    Q[Shopper query generator] --> E[Episode runner]
+
+    H[Hidden store truth] --> S[Scorer]
+    H --> B[Legacy backend simulator]
+
+    B --> T[Agent tool surface]
+    B --> V[Vanilla search baseline]
+
+    E --> A[Shopping agent]
+    T --> A
+    A --> O[Agent answer / action]
+    V --> S
+    O --> S
+
+    S --> R[Reward / diagnostics]
+```
+
+### Core realism problems
+
+The shopper-facing benchmark has three realism problems:
+
+1. **Store world**: catalog, ontology, inventory, policies, compatibility, variants, and dirty product data.
+2. **Tool surface**: what the agent is allowed to ask, how much structure it gets, and how lossy the interface is.
+3. **Query distribution**: whether test queries resemble real shoppers rather than benchmark-authored prompts.
+
+The agent must not see the hidden ontology directly. It should interact with a production-shaped surface: search, facets, product details, compatibility checks, policy search, inventory, and constrained alias resolution. The evaluator separately holds the richer ground truth needed to score correctness.
+
+### Realistic underlying store data model
+
+The hidden store should look like a messy mid-market ecommerce backend, not a clean academic product table.
+
+| Store object | Realistic contents | Hidden vs visible |
+| --- | --- | --- |
+| `products` | SKU, title, brand, description, category, price, status | Partly visible |
+| `variants` | Size, color, fit, pack size, generation, material | Partly visible |
+| `inventory` | Location, availability, backorder, delivery estimate | Visible through lookup |
+| `categories` | Department, category, subcategory, browse tree | Partly visible |
+| `attributes` | Structured specs, noisy extracted specs, missing values | Partly visible |
+| `aliases` | Brand aliases, misspellings, model aliases, shorthand | Visible only through resolver |
+| `compatibility_edges` | Device-model-to-accessory, part-to-appliance, substitutes | Hidden; exposed via scoped tool |
+| `policies` | Returns, shipping, warranty, pickup, order tracking | Visible through policy search |
+| `behavioral_logs` | Query, click, add-to-cart, purchase, reformulation | Hidden or used for generation |
+| `relevance_labels` | Query to exact/substitute/complement/irrelevant labels | Hidden scorer only |
+
+Postgres is a credible simulator for the relational and semi-structured source of truth because it supports relational data plus JSON-style product attributes, and `jsonb` fields can be indexed with GIN for key/value search. Solr is a credible simulator for the legacy ecommerce search layer because it supports fielded text analysis, eDisMax-style query parsing, boosting, and faceting. Schema.org Product is useful as an external sanity check for product fields, though it is too shallow to serve as the full hidden ontology.
+
+Store realism checklist:
+
+- Product titles contain marketing noise, abbreviations, units, model numbers, and variants.
+- Product attributes are incomplete and category-specific.
+- Some attributes exist only in text, not structured fields.
+- Some products are miscategorized.
+- Variant relationships are inconsistent.
+- Price and inventory can change independently of catalog metadata.
+- Compatibility is not derivable from keyword overlap alone.
+- Policy pages are separate from product data.
+- Search index data lags behind source-of-truth database state.
+- Facets are useful but incomplete.
+- The hidden evaluator knows more than the agent-facing API.
+
+### Realistic dual surface
+
+The cleanest framing is **dual surface = hidden truth surface + agent-visible production surface**.
+
+| Surface | Who sees it | Purpose |
+| --- | --- | --- |
+| Hidden truth surface | Evaluator only | Scoring, oracle labels, full ontology, true compatibility |
+| Legacy backend surface | Simulator internals | Postgres/Solr-style data services |
+| Agent tool surface | Shopping agent | Constrained production-like APIs |
+| Vanilla search surface | Baseline | Same search index without agent reasoning |
+
+The agent gets a thin orchestration layer, not direct database access.
+
+| Tool | Realistic behavior | Anti-oracle constraint |
+| --- | --- | --- |
+| `search_products(query, filters?, limit?)` | Solr/BM25/hybrid search over indexed catalog | Returns ranked candidates, not correct products |
+| `get_product_details(product_ids)` | Product page data, specs, description, reviews | Only for retrieved or specified products |
+| `list_facets(query_or_category)` | Available filters and counts | Returns exposed index facets only |
+| `filter_products(query_or_category, filters)` | Apply category/attribute/price filters | Only supports public filter schema |
+| `resolve_alias(text)` | Candidate brands/models/categories | Returns candidates with confidence, not truth |
+| `check_compatibility(anchor, candidates)` | Scoped compatibility check | Requires candidate products; does not dump graph |
+| `search_policies(query)` | Search support/policy corpus | No product relevance signal |
+| `check_inventory(product_ids)` | Stock, fulfillment, delivery availability | Does not rank products |
+| `compare_products(product_ids)` | Compare selected products | Only compares selected candidates |
+| `ask_user(question)` | Clarification action | Penalized when unnecessary |
+
+Avoid oracle tools such as `query_sql(sql)`, `get_all_products_matching_intent(query)`, `get_ontology_node(query)`, `get_compatible_products(model)`, `get_gold_relevance(query)`, and `classify_baymard_query_type(query)`. These leak simulator internals, gold labels, or benchmark taxonomies.
+
+Use **Level 3** for the main RLE: search, facets, alias resolution, scoped compatibility, policy search, product details, and inventory. Vanilla search only is the baseline; direct ontology or SQL access is diagnostic only; gold relevance APIs are invalid.
+
+### Why this tests the shopping agent
+
+- The agent must decide whether the query is product, policy, compatibility, symptom, use-case, or mixed.
+- The agent must choose retrieval strategy before seeing perfect structure.
+- The agent must inspect enough products without brute-forcing the catalog.
+- The agent must compose tools when keyword search is insufficient.
+- The agent must know when not to recommend products.
+- The scorer can measure whether the same tools are used more effectively than vanilla search.
+
+### Realistic shopper-query distribution
+
+Baymard should define ecommerce query-type coverage because it identifies common ecommerce search query classes such as exact, product type, feature, use case, abbreviation/symbol, compatibility, symptom, and non-product searches. Bitext should supply language variation and retail intent coverage, but not product relevance labels. Amazon's ESCI Shopping Queries dataset is useful for query realism because it includes difficult shopping queries with query-product relevance labels such as Exact, Substitute, Complement, and Irrelevant.
+
+```mermaid
+flowchart TD
+    B[Baymard query taxonomy] --> M[Scenario templates]
+    X[Bitext retail intents] --> L[Language variants]
+    E[ESCI / real search queries] --> R[Query realism calibration]
+    C[Catalog ontology] --> G[Grounded query generator]
+    U[User behavior model] --> G
+
+    M --> G
+    L --> G
+    R --> G
+
+    G --> Q[Test query episodes]
+    Q --> A[Agent]
+    Q --> V[Vanilla search]
+```
+
+| Source | Use | Limitation |
+| --- | --- | --- |
+| Baymard taxonomy | Coverage of ecommerce search failure modes | Taxonomy, not a labeled query corpus |
+| Bitext | Natural-language retail support phrasing | Chatbot data, not product-ranking gold |
+| ESCI | Realistic product-search relevance patterns | Amazon domain may not match target vertical |
+| Production logs | Best realism source if available | Privacy, bias, commercial sensitivity |
+| Synthetic generation | Coverage and controllability | Must be calibrated against real logs |
+
+| Episode class | Example | Required agent behavior |
+| --- | --- | --- |
+| Exact product | “Dyson V8 absolute battery” | Find exact or compatible item |
+| Product type | “linen duvet cover” | Route to category and useful filters |
+| Feature | “waterproof black hiking boots wide” | Apply hard filters |
+| Use case | “gift for 8 year old who likes space” | Infer category and explain assumptions |
+| Compatibility | “case for iphone 15 pro max” | Enforce compatibility |
+| Symptom | “laptop gets too hot on desk” | Map problem to solution categories |
+| Abbreviation/symbol | `13" laptop sleeve under $40` | Normalize units and constraints |
+| Non-product | “how long do returns take” | Route to policy answer |
+| Mixed | “waterproof trail shoes, can I return if they don't fit?” | Product search plus policy support |
+
+Realism validation loop:
+
+1. Build synthetic queries from templates.
+2. Mix in Bitext-style language variants.
+3. Mix in ESCI or production-log queries where available.
+4. Run vanilla search.
+5. Identify whether failures resemble known ecommerce search failures.
+6. Label gold products, categories, filters, policy routes, and acceptable clarifications.
+7. Reject episodes where the answer is only obvious because the synthetic author encoded it too cleanly.
+8. Reject episodes where no reasonable tool strategy can recover the answer.
+9. Keep adversarial noise but preserve shopper plausibility.
+
+### Proposed shopper benchmark stack
+
+```text
+Postgres-like source of truth
++ Solr/BM25-style search index
++ policy/document search index
++ scoped compatibility service
++ constrained MCP-style tool wrapper
++ hidden evaluator ontology
++ Baymard/Bitext/ESCI/log-derived query generator
++ vanilla search baseline
++ reward scorer
+```
+
+Concrete hidden data model:
+
+```text
+products(product_id, parent_product_id, title, brand, category_id, description, price, active_status)
+product_variants(variant_id, product_id, color, size, material, pack_size, model, gtin, mpn)
+product_attributes(product_id, attribute_name, attribute_value, source, confidence)
+inventory(product_id, location_id, availability_status, quantity, delivery_days)
+categories(category_id, parent_category_id, name, path)
+aliases(alias_text, canonical_type, canonical_id, confidence)
+compatibility_edges(anchor_type, anchor_id, product_id, relation_type, confidence)
+policies(policy_id, title, body, policy_type)
+search_logs(query, clicked_product_ids, purchased_product_ids, reformulated_query, timestamp)
+relevance_labels(episode_id, product_id, label)
+```
+
+Concrete shopper tool contract:
+
+```text
+search_products(query, filters=None, limit=20)
+list_facets(query=None, category_id=None)
+get_product_details(product_ids)
+resolve_alias(text, types=None)
+filter_products(query=None, category_id=None, filters=None, limit=20)
+check_compatibility(anchor_text, candidate_product_ids)
+search_policies(query, limit=5)
+check_inventory(product_ids)
+```
+
+| Scoring dimension | Hidden evaluator uses |
+| --- | --- |
+| Retrieval quality | Gold query-product labels |
+| Constraint fidelity | Hidden normalized attributes |
+| Compatibility correctness | Hidden compatibility graph |
+| Non-product routing | Hidden policy-route labels |
+| Baseline lift | Vanilla search output |
+| Tool-use quality | Tool call trace |
+| UX quality | Final answer and clarification behavior |
+| Robustness | Query variants and perturbations |
+
+The most important design principle is that the agent-facing surface should be **strong enough to make success possible but weak enough that success requires composition**.
+
+| Query | Vanilla search likely does | Good agent does |
+| --- | --- | --- |
+| “xps 13 9310 charger” | Finds generic Dell chargers | Resolves model, retrieves candidates, checks compatibility |
+| “black dress wedding guest summer” | Returns black dresses | Infers occasion/season, filters fabric/style, avoids bridal items |
+| “stroller that fits in overhead bin” | Keyword matches stroller | Maps use case to compact travel stroller dimensions |
+| “my rug smells like dog” | Returns rugs | Maps symptom to cleaners/deodorizers, maybe pet-safe filter |
+| “return shoes after wearing once” | Returns shoes | Searches return policy and answers policy constraint |
+
+### Shopper capability MVP
+
+1. Build one vertical first, such as electronics accessories, apparel, home goods, or beauty.
+2. Use 5k to 20k products; small catalogs are too clean.
+3. Store canonical truth in Postgres-style tables.
+4. Create a Solr/BM25-style search index with intentionally imperfect analyzers and boosts.
+5. Expose only Level 3 tools to the agent.
+6. Generate 2k to 5k episodes across Baymard query types.
+7. Use Bitext to diversify wording and support/policy intents.
+8. Use ESCI or logs to calibrate query/product relevance style.
+9. Score against hidden labels and vanilla search.
+10. Run ablations with fewer tools and oracle tools to establish floor and ceiling.
+
+Final shopper architecture in one line:
+
+```text
+Realistic shopper-query generator
+→ constrained agent-visible commerce tools
+→ messy store/search backend
+→ hidden evaluator ontology
+→ baseline-relative reward
+```
+
+## 6. Data and Leakage Rules
 
 Bitext and DSPy-derived assets are absorbed into the environment and implementation. They are not separate systems under test.
 
@@ -160,7 +407,7 @@ Data leakage controls:
 4. Do not expose labels, expected workflows, evaluator assertions, reward functions, or scenario ground truth to LLM agents.
 5. Do not expose simulator ground truth to milli.run except through the same Merchant API Surface available to LLM agents.
 
-## 6. Module Ownership
+## 7. Module Ownership
 
 ### ShopWorld owns
 
@@ -229,7 +476,7 @@ The runner is the neutral experiment loop:
 
 The runner must not give one agent more privileged information than another.
 
-## 7. Initial Scenario Families
+## 8. Initial Scenario Families
 
 The first benchmark should focus on workflows where state changes the correct answer.
 
@@ -246,7 +493,7 @@ The first benchmark should focus on workflows where state changes the correct an
 | Invoice request | “Send me my invoice” | Depends on customer identity and order ownership. |
 | Promo issue | “My discount code failed” | Depends on discount rules, cart contents, expiration, and customer eligibility. |
 
-## 8. Evaluation Layers
+## 9. Evaluation Layers
 
 Evaluation must separate shallow NLU from operational success.
 
@@ -284,7 +531,7 @@ Evaluation must separate shallow NLU from operational success.
 | Collateral damage | Changes unrelated records. |
 | Weak audit | Cannot produce deterministic explanation of action chain. |
 
-## 9. MVP Scope
+## 10. MVP Scope
 
 The first MVP should avoid the earlier full 100-scenario target and ship one deterministic vertical slice first.
 
@@ -301,7 +548,7 @@ The first MVP should avoid the earlier full 100-scenario target and ship one det
 | Trace replay | Required. |
 | Determinism | Required. |
 
-## 10. Repository Split
+## 11. Repository Split
 
 ```text
 shopworld/
@@ -388,7 +635,7 @@ experiments/
   reports/
 ```
 
-## 11. Execution Sequence
+## 12. Execution Sequence
 
 1. Build ShopWorld core reset/step loop.
 2. Build canonical store schema.
@@ -406,7 +653,7 @@ experiments/
 14. Expand scenario count and hidden-state variants.
 15. Add long-horizon delayed-consequence episodes.
 
-## 12. Definition of Done for MVP
+## 13. Definition of Done for MVP
 
 | Requirement | Done When |
 | --- | --- |
@@ -421,7 +668,7 @@ experiments/
 | Failure report | Report separates milli.run failures from LLM failures. |
 | Trace replay | Any failed episode can be replayed deterministically. |
 
-## 13. Archived Inputs and Retained Context
+## 14. Archived Inputs and Retained Context
 
 Historical files remain in `platform-rnd/archive/` for provenance only. Relevant retained ideas are already folded into this document:
 
@@ -431,6 +678,6 @@ Historical files remain in `platform-rnd/archive/` for provenance only. Relevant
 - Business/GTM notes remain useful for customer discovery, but they do not define the MVP architecture.
 - Amazon/multi-channel ideas, poster assets, and raw prompts are backlog or communication artifacts, not implementation requirements.
 
-## 14. Current Active Contract
+## 15. Current Active Contract
 
 When planning or implementing ShopWorld from `platform-rnd/`, use this file as the active product and architecture contract. If an archived note conflicts with this document, this document wins unless a future PR explicitly supersedes it.
