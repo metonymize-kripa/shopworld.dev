@@ -1,5 +1,8 @@
-"""Shared application infrastructure helpers."""
+"""Compatibility shims for shared backend infrastructure.
 
-from shopworld.apps.lib.db import Database, init_database
+Prefer importing from :mod:`shopworld.backend` in new code.
+"""
+
+from shopworld.backend import Database, init_database
 
 __all__ = ["Database", "init_database"]

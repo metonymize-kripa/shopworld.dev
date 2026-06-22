@@ -8,7 +8,7 @@ from datetime import datetime
 from shopworld.common.datetime import SimulatedClock
 from shopworld.common.serialization import StateSnapshot, state_diff
 from shopworld.common.errors import ShopWorldError
-from shopworld.apps.lib.db import init_database
+from shopworld.backend.db import init_database
 from shopworld.apps.shopify_admin.graphql_api.scopes import check_scope, ScopeError
 
 

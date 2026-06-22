@@ -22,6 +22,7 @@ src/shopworld/
   task.py             Scenario definitions, loaders, and variants
   evaluator.py        State/trace grading and readiness-report primitives
   reward.py           Multi-dimensional reward vector
+  backend/            Shared backend infrastructure and modularization target
   apps/
     shopify_admin/    Shopify-like models and GraphQL wrapper
     customers/        Customer/support simulator
@@ -32,7 +33,7 @@ src/shopworld/
   examples/           Minimal usage examples
 ```
 
-The canonical Shopify-like GraphQL work is moving toward `src/shopworld/apps/shopify_admin/graphql_api/`. Keep overlapping API surfaces aligned until older wrappers are fully migrated and tested.
+The canonical Shopify-like GraphQL work is moving toward `src/shopworld/apps/shopify_admin/graphql_api/`. Shared backend infrastructure now belongs under `src/shopworld/backend/`; older shared paths, such as `shopworld.apps.lib`, should only be used as compatibility shims while imports migrate. Keep overlapping API surfaces aligned until older wrappers are fully migrated and tested.
 
 ## Quick start
 
@@ -61,6 +62,7 @@ make platform-check
 - Treat support/WISMO as the first priority slice because it exercises customers, orders, fulfillment, refunds, policy, and collateral damage together.
 - Add tests for every behavior the readiness report claims to measure.
 - Use `platform-rnd/README.md` to distinguish active planning references from historical notes.
+- Put reusable runtime, persistence, policy, simulation, commerce, and evaluation mechanics under `shopworld.backend.*`; keep `shopworld.apps.*` focused on concrete domain simulators and APIs.
 
 ## License
 
