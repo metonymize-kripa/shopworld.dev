@@ -1,62 +1,75 @@
-# Drop Day — shopworld.dev
+# shopworld.dev — Agentic Commerce Simulator
 
-Drop Day is a fast, cozy retail simulator about reading customer intent under pressure. You run a brand-new Shopify-style store where customers DM you a *vibe* instead of a SKU, you choose one product to ship, and you try to survive six increasingly demanding sales days without running out of cash or stock.
+shopworld.dev is a focused simulator for evaluating AI agents that operate commerce workflows. The repository now has one coherent product view: a public, lightweight web demo at the root and a Python evaluation platform in `shopworld-platform/`. Both point at the same thesis: before a merchant gives an agent write access, the agent should prove it can make profitable, policy-safe commerce decisions in a deterministic sandbox.
 
-The project is intentionally small: a self-contained Vite + React game, one Vercel serverless function for email capture, and no separate database service.
+## Product thesis
 
-## What you do in the game
+ShopWorld is an AppWorld-style simulator narrowed to agentic commerce. It models the messy operating surface of a Shopify-like merchant business: ambiguous customer intent, inventory pressure, refunds, fulfillment exceptions, policy boundaries, API scopes, and delayed consequences.
 
-- Read ambiguous customer briefs like “something cozy for my sister, she’s always cold.”
-- Pick a product from a fixed catalog before the customer’s patience timer runs out.
-- Earn profit and reputation for good matches, lose cash and reputation on refunds, and watch stock drain with every shipment.
-- Clear each day’s profit goal, then decide whether to buy an instant flash lot, a cheaper bulk crate, or skip restocking.
-- Survive all 6 days to turn the store into a brand.
+The MVP should answer three questions:
 
-## Tech stack
+1. Can the agent complete the requested commerce workflow?
+2. Did it avoid collateral damage such as wrong refunds, inventory corruption, unsafe discounts, or customer overpromises?
+3. What authority level is safe for the agent: read-only, draft-only, supervised operator, or autonomous operator?
 
-- **Vite 5** for local development and production builds.
-- **React 18** for the game UI and state machine.
-- **Vercel Functions** for `/api/signup`.
-- **Vercel Blob** for optional email signup storage.
-- **Plain CSS** for the mobile-first, phone-framed interface.
+## Repository map
 
-## Project structure
+| Area | Role | Status |
+| --- | --- | --- |
+| Root Vite app (`src/`, `api/`, `public/`) | Public-facing interactive demo for the ShopWorld thesis. It compresses agentic commerce decisions into a short “Agent Sprint” game loop. | Canonical web app. |
+| `support-sim/` | Deployable post-purchase support scenario explorer. It illustrates which agentic-commerce workflows are native, app-assisted, manual, or chaotic. | Scenario explorer; kept deployable for existing Vercel projects. |
+| `wismo-sim/` | Deployable WISMO/order-exception deep dive with API, data-model, and gap-analysis views. | Scenario explorer; kept deployable for existing Vercel projects. |
+| `shopworld-platform/` | Python package for deterministic commerce-agent evaluation: seeded state, Shopify-like APIs, tasks, rewards, traces, and reports. | Canonical simulator/evaluation runtime. |
+| `platform-rnd/` | Research archive and active planning notes. | Reference only; use `platform-rnd/README.md` to identify active docs. |
+
+The scenario explorers are not separate product directions; they are deployable visual slices that explain workflows the platform should eventually evaluate deterministically. New experiments should either become part of the root demo, land as tested platform scenarios, or remain as clearly labeled research notes under `platform-rnd/`.
+
+## Root web app
+
+The root app is intentionally small. It demonstrates the core evaluation loop without pretending to be the full platform:
+
+- Customer prompts contain intent, budget, and patience constraints.
+- The operator picks one fulfillment action from a fixed catalog.
+- The state machine scores margin, refunds, reputation, inventory, daily goals, and restocking decisions.
+- The signup API can capture interest when Vercel Blob is configured.
+
+### Structure
 
 ```text
 api/signup.js     Serverless POST endpoint for email capture via Vercel Blob
 public/favicon.svg
-src/App.jsx       Main game state machine, screens, restock flow, and signup UI
-src/gameData.js   Catalog, customer briefs, scoring rules, restock offers, day goals
+src/App.jsx       Main demo state machine, screens, restock flow, and signup UI
+src/gameData.js   Catalog, customer prompts, scoring rules, restock offers, day goals
 src/main.jsx      React entry point
 src/styles.css    Design tokens, layout, components, animations
 src/ui.jsx        Shared HUD pieces: cash, reputation, patience ring, floaters
+support-sim/      Deployable support-workflow scenario explorer
+wismo-sim/        Deployable WISMO/order-exception scenario explorer
 index.html        Vite HTML shell
 vercel.json       Vercel build/output configuration
 vite.config.js    Vite React plugin configuration
 ```
 
+## Platform runtime
 
-## Monorepo contract
+`shopworld-platform/` owns the long-term product: reproducible agent evaluation for Shopify-like operations. Its core loop is:
 
-This repository intentionally contains two related workstreams:
+```text
+seeded commerce state → agent tool/API actions → world transition → state/trace evaluation → readiness report
+```
 
-| Package | Purpose | Canonical outcome | Deploy/release target |
-| --- | --- | --- | --- |
-| Root Vite app (`api/`, `src/`, `public/`) | **Drop Day**, the public shopworld.dev marketing/game experience. | A shippable, mobile-first React game with optional Vercel Blob email capture. | Vercel static app plus `/api/signup`. |
-| `shopworld-platform/` | **ShopWorld platform**, a Python package for deterministic Shopify-like agent evaluation. | A reproducible RL/evaluation environment with seeded commerce state, policy controls, traces, and reports. | Python package/CLI; not deployed with the Vite app. |
-| `platform-rnd/` | Research notes, specs, and review artifacts that inform the platform roadmap. | Planning context and architecture decision records; see `platform-rnd/README.md` for current status. | Documentation only. |
-
-Drop Day is the lightweight public-facing demo and brand surface. The Python platform is the deeper simulator/evaluation product. Changes should be reviewed against the package they affect; cross-package changes should explain the product relationship they are tightening.
+The platform should prioritize deterministic end-to-end vertical slices over broad but shallow API coverage. Post-purchase support and WISMO-style workflows are the clearest first slice because they tie customer messaging, order state, fulfillment, refunds, inventory, policy, and collateral-damage checks together.
 
 ## Canonical commands
 
-Use the root `Makefile` for repeatable local checks across both runtimes:
+Use the root `Makefile` for repeatable checks across both runtimes:
 
 | Command | Purpose |
 | --- | --- |
 | `make app-build` | Build the Vite app. |
 | `make app-dev` | Start the Vite dev server. |
 | `make app-preview` | Preview the built Vite app. |
+| `make scenario-build` | Build the deployable support and WISMO scenario explorers. |
 | `make platform-sync` | Install/sync Python dependencies from `shopworld-platform/uv.lock`. |
 | `make platform-test` | Run the Python platform test suite. |
 | `make platform-lint` | Run Ruff checks on platform source and tests. |
@@ -65,32 +78,26 @@ Use the root `Makefile` for repeatable local checks across both runtimes:
 | `make check` | Run app build plus all platform checks. |
 | `make format` | Format platform Python code with Ruff and Black. |
 
-For reproducible platform setup, prefer `make platform-sync` before running Python checks.
-
 ## Local development
 
-### Prerequisites
-
-- Node.js 18 or newer.
-- npm.
-
-### Install and run
+### Web app
 
 ```bash
 npm install
 npm run dev
-```
-
-Vite serves the app at `http://localhost:5173` by default.
-
-### Build and preview
-
-```bash
 npm run build
 npm run preview
 ```
 
-`npm run build` writes the production bundle to `dist/`.
+### Platform
+
+```bash
+cd shopworld-platform
+uv sync --frozen --all-extras
+uv run pytest tests/
+uv run ruff check src tests
+uv run mypy src
+```
 
 ## Email capture
 
@@ -100,57 +107,12 @@ The signup form posts JSON to `/api/signup`:
 { "email": "you@example.com" }
 ```
 
-The endpoint validates the email, deduplicates by address, and stores entries in a private Blob object named `signups.json` when `BLOB_READ_WRITE_TOKEN` is available.
+The endpoint validates the email, deduplicates by address, and stores entries in a private Vercel Blob object named `signups.json` when `BLOB_READ_WRITE_TOKEN` is available. Without the token, it returns a successful no-op response so local gameplay and deployments without storage do not crash.
 
-Without `BLOB_READ_WRITE_TOKEN`, the endpoint returns a successful no-op response so local gameplay and deployments without storage do not crash. The frontend currently shows signup as unavailable when storage is not configured.
+## Product guardrails
 
-### Enable signups on Vercel
-
-1. Import the repo into Vercel. The project is configured as a Vite app.
-2. In the Vercel project, go to **Storage → Blob → Create / Connect**.
-3. Confirm Vercel adds `BLOB_READ_WRITE_TOKEN` to the project environment.
-4. Redeploy.
-5. New signups are persisted to `signups.json` in the Blob store.
-
-## Deployment
-
-1. Push this repository to your Git provider.
-2. Import it in Vercel.
-3. Vercel uses `vercel.json` to run `vite build` and serve the `dist` output directory.
-4. Deploy.
-
-The game can run without Blob storage; only persistent email capture requires the Blob integration.
-
-## Gameplay tuning
-
-The main balance knobs are intentionally easy to find:
-
-- `SECONDS_PER_DAY`, `START_CASH`, and `START_STOCK` live near the top of `src/App.jsx`.
-- `DAY_GOALS`, `CATALOG`, `RESTOCK_OFFERS`, and customer `BRIEFS` live in `src/gameData.js`.
-- Product matching is handled by `resolveOrder()` in `src/gameData.js`:
-  - matching wanted tags increases profit/reputation outcomes,
-  - avoided tags or severe budget misses trigger refunds,
-  - irrelevant but harmless items can still produce partial profit with a reputation penalty.
-
-## Design notes
-
-Drop Day follows a compact loop inspired by cozy service games:
-
-> ambiguous intent → production action → cost/profit outcome → reinvest → retention
-
-The Shopify-style layer adds cash pressure, limited inventory, restock choices, and customer reputation. The UI is mobile-first, but desktop users see the game inside a centered phone-shaped frame.
-
-## Available npm scripts
-
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite development server. |
-| `npm run build` | Create a production build in `dist/`. |
-| `npm run preview` | Serve the production build locally for review. |
-
-## Notes for future work
-
-- Add a lockfile so installs are fully reproducible.
-- Add automated tests for scoring and signup validation.
-- Persist more gameplay analytics, such as day reached, final cash, and most-refunded products.
-- Consider rate limiting or bot protection before using signup capture for a public launch.
+- Keep the root app as a concise explanation of ShopWorld, not a second product.
+- Keep deterministic agent evaluation in `shopworld-platform/`.
+- Avoid adding orphan prototype directories; every runnable app needs a documented owner, command, deployment reason, and relationship to the platform.
+- Treat `platform-rnd/` as context, not source of truth, unless its index marks a document active.
+- Prefer one complete vertical slice with tests and evaluator checks over many partial API mocks.

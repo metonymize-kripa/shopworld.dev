@@ -42,27 +42,27 @@ function Title({ onStart, signedUp, setSignedUp }) {
   return (
     <div className="fill" style={{ padding: '0 22px' }}>
       <div className="scroll fill" style={{ paddingTop: 'max(28px, env(safe-area-inset-top))' }}>
-        <div className="kicker pop" style={{ animationDelay: '.05s' }}>shopworld.dev presents</div>
+        <div className="kicker pop" style={{ animationDelay: '.05s' }}>shopworld.dev simulator</div>
 
         <h1 className="display" style={{ fontSize: 'clamp(54px, 17vw, 80px)', marginTop: 14 }}>
-          <span className="pop" style={{ display: 'block', animationDelay: '.1s' }}>Drop</span>
-          <span className="pop" style={{ display: 'block', animationDelay: '.18s', color: 'var(--mint-deep)' }}>Day.</span>
+          <span className="pop" style={{ display: 'block', animationDelay: '.1s' }}>Agent</span>
+          <span className="pop" style={{ display: 'block', animationDelay: '.18s', color: 'var(--mint-deep)' }}>Sprint.</span>
         </h1>
 
         <p className="slide-up" style={{ marginTop: 16, fontSize: 17, lineHeight: 1.45, color: 'var(--ink-soft)', maxWidth: 320, animationDelay: '.25s' }}>
-          You just opened a store. Customers slide into your DMs with a <em>vibe</em>, not an order.
-          Read them. Ship the right thing. Keep the lights on.
+          You are evaluating an AI commerce operator. Customers arrive with fuzzy intent, constrained budgets, and patience timers.
+          Pick the safest fulfillment action before trust, stock, or cash runs out.
         </p>
 
         <div className="slide-up" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 20, animationDelay: '.3s' }}>
-          <span className="chip">🧠 Read intent</span>
-          <span className="chip">📦 Watch stock</span>
-          <span className="chip">💵 Don't go broke</span>
+          <span className="chip">🧠 Infer intent</span>
+          <span className="chip">📦 Protect inventory</span>
+          <span className="chip">🛡️ Minimize risk</span>
         </div>
 
         {/* preview ticket */}
         <div className="card slide-up" style={{ marginTop: 24, padding: 18, animationDelay: '.36s' }}>
-          <div className="kicker">Incoming DM</div>
+          <div className="kicker">Evaluation prompt</div>
           <p style={{ marginTop: 8, fontSize: 16, fontWeight: 600 }}>
             "something cozy for my sister, she's always cold" 🧣
           </p>
@@ -79,10 +79,10 @@ function Title({ onStart, signedUp, setSignedUp }) {
 
       <div style={{ padding: '12px 0 max(20px, env(safe-area-inset-bottom))' }}>
         <button className="btn btn-mint focus-ring" style={{ width: '100%', fontSize: 18 }} onClick={onStart}>
-          Open the store →
+          Run the episode →
         </button>
         <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--ink-soft)', marginTop: 10 }}>
-          6 days to hit ${DAY_GOALS[DAY_GOALS.length - 1]} total profit.
+          6 simulated days to reach ${DAY_GOALS[DAY_GOALS.length - 1]} total profit.
         </p>
       </div>
     </div>
@@ -376,13 +376,13 @@ function Win({ game, onRetry, signedUp, setSignedUp }) {
       <div className="slide-up">
         <div style={{ fontSize: 64 }}>🏆</div>
         <div className="kicker" style={{ marginTop: 8 }}>6 days survived</div>
-        <h2 className="display" style={{ fontSize: 40, marginTop: 6 }}>You built a brand.</h2>
+        <h2 className="display" style={{ fontSize: 40, marginTop: 6 }}>Agent passed the sprint.</h2>
         <p style={{ color: 'var(--ink-soft)', marginTop: 10, fontSize: 16 }}>
           Final cash <strong style={{ color: 'var(--mint-deep)' }}>${game.cash}</strong> · reputation {game.rep}/100.
-          Real Shopify owners do this every day — now imagine doing it with refunds, ad spend, and shipping delays.
+          The full platform expands this loop into support tickets, refunds, fulfillment delays, policy scopes, and state-based evaluation.
         </p>
       </div>
-      <EmailGate signedUp={signedUp} setSignedUp={setSignedUp} compact headline="Get the full sim early" />
+      <EmailGate signedUp={signedUp} setSignedUp={setSignedUp} compact headline="Get the full benchmark" />
       <button className="btn btn-ghost focus-ring" style={{ width: '100%', marginTop: 10 }} onClick={onRetry}>
         Play again
       </button>
@@ -432,7 +432,7 @@ function EmailGate({ signedUp, setSignedUp, compact, headline }) {
 
   return (
     <div className="card" style={{ padding: 16, marginTop: compact ? 18 : 22 }}>
-      <div className="kicker">{headline || 'Get new drops + the full game'}</div>
+      <div className="kicker">{headline || 'Get the agent benchmark'}</div>
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <input
           className="focus-ring"

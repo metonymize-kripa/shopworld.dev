@@ -6,7 +6,7 @@ _Date: 2026-06-18_
 
 The repository currently contains two related but operationally different products:
 
-1. **`shopworld.dev` / Drop Day** — a compact Vite + React marketing/game application with a Vercel signup function.
+1. **`shopworld.dev` / Agent Sprint** — a compact Vite + React marketing/game application with a Vercel signup function.
 2. **`shopworld-platform`** — a Python package intended to become a deterministic Shopify-like reinforcement-learning and evaluation environment.
 
 Both directions are promising, but the codebase is still in a prototype/research phase. The highest-leverage improvement is to make the repository intentionally monorepo-shaped: document which package owns which outcome, add repeatable quality gates for both runtimes, and harden the core simulator loop before expanding feature surface area. The React app is relatively small and shippable, while the Python platform has stronger product ambition but many placeholder seams, duplicated GraphQL APIs, and insufficient integration between models, database state, environment stepping, simulators, and evaluation.
@@ -40,7 +40,7 @@ The platform README articulates a strong and differentiated goal: evaluate AI st
 
 ### 2. Small root app with a focused user loop
 
-The Drop Day app has a simple loop, clear constants, and centralized game data. This is good for iteration speed and lowers onboarding cost for contributors. Product/catalog tuning lives mostly in `src/gameData.js`, while runtime screens and transitions are in `src/App.jsx`.
+The Agent Sprint app has a simple loop, clear constants, and centralized game data. This is good for iteration speed and lowers onboarding cost for contributors. Product/catalog tuning lives mostly in `src/gameData.js`, while runtime screens and transitions are in `src/App.jsx`.
 
 ### 3. Platform package has the right conceptual modules
 
@@ -65,7 +65,7 @@ The root README describes a Vite game and serverless signup flow, while `shopwor
 - package ownership and purpose;
 - canonical commands for app build, Python tests, formatting, and linting;
 - release/deployment targets;
-- the relationship between Drop Day and the ShopWorld platform;
+- the relationship between Agent Sprint and the ShopWorld platform;
 - whether `platform-rnd/` documents are historical, canonical, or superseded.
 
 ### Issue A2 — `node_modules/` is currently untracked but present in the working tree
@@ -329,7 +329,7 @@ shopworld.dev/
   README.md                 # monorepo purpose + commands
   package.json              # app scripts
   api/                      # Vercel functions
-  src/                      # Drop Day app
+  src/                      # Agent Sprint app
   platform-rnd/             # research, ADRs, canonical plans
   shopworld-platform/
     pyproject.toml

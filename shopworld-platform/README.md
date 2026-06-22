@@ -1,75 +1,66 @@
-# ShopWorld
+# ShopWorld Platform
 
-A deterministic reinforcement learning and evaluation environment for AI agents that operate Shopify merchant businesses.
+ShopWorld Platform is the deterministic runtime for evaluating AI agents that operate Shopify-like merchant workflows. It is the backend counterpart to the root `shopworld.dev` demo: the web app explains the thesis, while this package provides seeded tasks, simulated APIs, rewards, traces, and readiness reporting.
 
-## Overview
+## What the platform evaluates
 
-ShopWorld lets merchants stress-test AI store managers in a private simulated clone before granting live store access. It answers:
+ShopWorld focuses on agentic commerce rather than generic office automation. A candidate agent is expected to reason across:
 
-1. What workflows can this agent perform safely?
-2. What permission scopes should the merchant grant?
-3. What is the expected uplift and downside risk before deployment?
+- Shopify-like Admin GraphQL queries and mutations.
+- Customer support state, especially post-purchase/WISMO workflows.
+- Inventory, fulfillment, supplier, logistics, and customer simulators.
+- Policy scopes and authority levels.
+- Business, customer, operational, API-efficiency, and safety metrics.
 
-## Core Features
+The product goal is not just “task success.” Evaluations should also detect collateral damage: incorrect refunds, unsafe inventory edits, unnecessary discounts, missed escalations, privacy violations, overpromises, and other state changes a merchant would care about before granting write access.
 
-- **Simulated Shopify World**: Deterministic commerce environment with customers, suppliers, logistics, and advertising
-- **Shopify Admin GraphQL Simulator**: Realistic API surface with scopes, pagination, and throttling
-- **Support Inbox**: Stateful customer service interactions with sentiment and policy compliance
-- **Actor Simulators**: Synthetic customers, shoppers, suppliers, carriers, and ad venues
-- **Vector Reward Evaluation**: Business, customer, operational, API, and safety metrics
-- **Merchant-Specific Twins**: Import store data for private, realistic evaluation
-- **Readiness Reports**: Workflow-by-workflow safety assessments and staged deployment recommendations
+## Current package shape
 
-## Quick Start
-
-### Using `uv` (recommended)
-
-```bash
-# Run with uv (no install needed)
-uv run shopworld hello
-
-# Run tests
-uv run pytest tests/
-
-# Run example
-uv run python -m shopworld.examples.hello_world
-
-# Install for development
-uv pip install -e ".[dev]"
-```
-
-### Using pip
-
-```bash
-# Install
-pip install -e ".[dev]"
-
-# Run CLI
-shopworld hello
-
-# Run tests
-pytest tests/
-```
-
-## Architecture
-
-```
-shopworld/
-  environment.py      # Core RLE: reset, step, state management
-  task.py            # Scenario definitions and loading
-  evaluator.py       # State-based and trace-based grading
-  reward.py          # Multi-dimensional reward vector
+```text
+src/shopworld/
+  environment.py      Gym-like deterministic episode runtime
+  task.py             Scenario definitions, loaders, and variants
+  evaluator.py        State/trace grading and readiness-report primitives
+  reward.py           Multi-dimensional reward vector
   apps/
-    shopify_admin/   # Simulated Shopify GraphQL API
-    suppliers/       # Supplier simulator
-    logistics/       # Carrier/fulfillment simulator
-    customers/       # Customer/shopper simulator
-    ads/             # Advertising venue simulator
+    shopify_admin/    Shopify-like models and GraphQL wrapper
+    customers/        Customer/support simulator
+    logistics/        Fulfillment/logistics simulator
+    suppliers/        Supplier simulator
+  common/             Clock, errors, serialization helpers
+  generate/           Seed-store generation helpers
+  examples/           Minimal usage examples
 ```
 
-## Development
+The canonical Shopify-like GraphQL work is moving toward `src/shopworld/apps/shopify_admin/graphql_api/`. Keep overlapping API surfaces aligned until older wrappers are fully migrated and tested.
 
-See [Product Research and Implementation Plan](../platform-rnd/shopworld-product-research-implementation-plan.md) for detailed specifications.
+## Quick start
+
+From this directory:
+
+```bash
+uv sync --frozen --all-extras
+uv run shopworld hello
+uv run python -m shopworld.examples.hello_world
+uv run pytest tests/
+```
+
+From the repository root, prefer the Makefile targets:
+
+```bash
+make platform-test
+make platform-lint
+make platform-type
+make platform-check
+```
+
+## Development guardrails
+
+- Build complete deterministic vertical slices before adding broad API breadth.
+- Keep task fixtures, world transitions, and evaluator assertions in sync.
+- Treat support/WISMO as the first priority slice because it exercises customers, orders, fulfillment, refunds, policy, and collateral damage together.
+- Add tests for every behavior the readiness report claims to measure.
+- Use `platform-rnd/README.md` to distinguish active planning references from historical notes.
 
 ## License
 
