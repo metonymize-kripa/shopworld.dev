@@ -41,20 +41,18 @@ npm run dev
 
 ### 2. Shopper Simulator
 
-Set up and execute the shopper simulator matrix tests:
+Execute the shopper simulator matrix tests:
 ```bash
 cd shopper_sim
-pip install -e ".[dev]"
-pytest -q
+uv run python -m pytest -q
 ```
 
 ### 3. Commerce RL Environment
 
-Set up and execute the Gym environment benchmarks:
+Execute the Gym environment benchmarks:
 ```bash
 cd commerce_rle
-pip install -e ".[dev]"
-pytest -q
+uv run pytest -q
 ```
 
 ---

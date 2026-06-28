@@ -41,9 +41,8 @@ tests/test_env.py        # proves the three ideas + env solvability
 ## Quickstart
 
 ```bash
-pip install -e ".[dev]"
-pytest -q          # 8 tests, all green
-python scripts/demo.py
+uv run pytest -q          # 8 tests, all green
+uv run python scripts/demo.py
 ```
 
 ## The core loop
@@ -153,7 +152,7 @@ The evaluator exposes AppWorld's three benchmark metrics (Trivedi et al., ACL
   solve.
 
 ```bash
-python scripts/benchmark.py    # runs the oracle, prints TGC / SGC / SubG
+uv run python scripts/benchmark.py    # runs the oracle, prints TGC / SGC / SubG
 ```
 
 Aggregate across a dataset with `aggregate_metrics([evals])` for mean TGC and
@@ -184,7 +183,7 @@ the seeded start state. Registered in `tasks/generators.py:REGISTRY`.
 
 `REFUSAL_GENERATORS` names the two whose correct behavior is to make no database
 change. The oracle in `agents/oracle.py` solves every family to the +1.5 ceiling;
-run `python scripts/demo.py` to see each, or `python scripts/benchmark.py` for
+run `uv run python scripts/demo.py` to see each, or `uv run python scripts/benchmark.py` for
 stratified TGC/SGC/SubG across all families.
 
 ### Refusal tasks (negative / "do nothing" tasks)

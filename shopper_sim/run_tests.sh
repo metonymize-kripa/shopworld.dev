@@ -4,4 +4,4 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 echo "==> Running shopper_sim test suite"
-uv run pytest "$@"
+uv run python -m pytest "$@"

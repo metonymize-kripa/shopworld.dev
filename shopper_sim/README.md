@@ -49,27 +49,24 @@ turns" are chat messages; for the web adapter, they're page states and the
 shopper's "utterances" are DOM actions. A multistep return on a Shopify
 storefront runs through the identical state machine.
 
-## Install
+## Install & Run
 
 Requires Python 3.12+.
 
-**With uv (recommended):**
+We standardise on Astral `uv` for managing dependencies and execution. There is no need to manually activate a virtualenv or run `pip install` â€” standard python/pytest commands should be run using `uv run`:
 
 ```bash
-uv sync                      # install engine + dev deps (numpy, pytest, ruff)
-uv sync --extra agents       # add httpx for real HTTP merchant agents
-uv sync --extra web          # add Playwright for web storefronts
-uv sync --extra graph        # add FalkorDB client for graph authoring
+# Run the test suite
+uv run python -m pytest
+
+# Run formatting checks
+uv run ruff check
 ```
 
-**With pip:**
+If you need to install specific extras (e.g. for agents, web storefronts, or graph sync), you can run:
 
 ```bash
-pip install -e .             # engine + tests (numpy only at runtime)
-pip install -e ".[agents]"   # add httpx for real HTTP merchant agents
-pip install -e ".[web]"      # add Playwright for web storefronts
-pip install -e ".[graph]"    # add FalkorDB client for graph authoring
-pip install -e ".[dev]"      # add pytest + ruff
+uv sync --all-extras
 ```
 
 The runtime engine depends only on **numpy**. `httpx`, Playwright, the FalkorDB
@@ -142,7 +139,7 @@ shopper utterance, merchant response, classification, outcome, and goal result â
 serialisable via `transcript.to_dict()`. From the CLI:
 
 ```bash
-shopper-sim run --merchant good --dump-transcripts run.json
+uv run shopper-sim run --merchant good --dump-transcripts run.json
 ```
 
 `run.json` contains every cell's transcripts; because the shopper is

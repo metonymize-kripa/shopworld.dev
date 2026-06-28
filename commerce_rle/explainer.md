@@ -13,8 +13,8 @@ Python ≥ 3.10. No third-party runtime dependencies (stdlib + sqlite3 only).
 [`uv`](https://github.com/astral-sh/uv) is the recommended launcher.
 
 ```bash
-# Install the package + dev deps (pytest) in one shot — no virtualenv needed
-uv pip install -e ".[dev]"
+# Run commands directly with uv (creates virtualenv and resolves deps on-the-fly)
+uv run pytest -q
 ```
 
 ---

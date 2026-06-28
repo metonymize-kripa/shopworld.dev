@@ -168,13 +168,13 @@ function OverviewSection({ setTab, subActiveTab, setSubActiveTab, signedUp, setS
             
             <div className="quickstart-box">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 10, color: 'var(--slate-muted)', fontFamily: 'var(--display)', fontWeight: 600 }}>INSTALL DETERMISTIC ENGINE</span>
-                <code>pip install shopper-sim</code>
+                <span style={{ fontSize: 10, color: 'var(--slate-muted)', fontFamily: 'var(--display)', fontWeight: 600 }}>RUN THE SIMULATOR</span>
+                <code>uv run shopper-sim run --merchant good</code>
               </div>
               <button 
                 id="copy-pip-engine" 
                 className="copy-btn" 
-                onClick={() => handleCopy('pip install shopper-sim', 'copy-pip-engine')}
+                onClick={() => handleCopy('uv run shopper-sim run --merchant good', 'copy-pip-engine')}
               >
                 Copy
               </button>
