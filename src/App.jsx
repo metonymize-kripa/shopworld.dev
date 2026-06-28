@@ -10,7 +10,7 @@ import SupportSim from './SupportSim.jsx'
 export default function App() {
   const [currentTab, setCurrentTab] = useState('overview') // 'overview' | 'game-sims'
   const [signedUp, setSignedUp] = useState(false)
-  const [subprojectActiveTab, setSubprojectActiveTab] = useState('platform') // 'platform' | 'shopper_sim' | 'commerce_rle'
+  const [subprojectActiveTab, setSubprojectActiveTab] = useState('shopper_sim') // 'shopper_sim' | 'commerce_rle'
   const [activePlayground, setActivePlayground] = useState('sprint') // 'sprint' | 'support'
 
   // Scroll to top on tab change
@@ -217,28 +217,13 @@ function OverviewSection({ setTab, subActiveTab, setSubActiveTab, signedUp, setS
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div className="kicker">Repository map & capabilities</div>
-            <h2 className="section-title">The Three Pillars of ShopWorld</h2>
+            <h2 className="section-title">The Core Subsystems of ShopWorld</h2>
             <p style={{ color: 'var(--ink-soft)', maxWidth: 640, margin: '0 auto', fontSize: 16 }}>
-              A horizontal slice of evaluation runtimes covering standard Shopify APIs, deterministic buyer simulation, and Gym-style Amazon commerce environments.
+              A focused set of evaluation runtimes covering standard buyer simulation and Gym-style Amazon commerce environments.
             </p>
           </div>
 
-          <div className="grid-3">
-            <div className="dev-card">
-              <span style={{ fontSize: 32 }}>🖥️</span>
-              <h3 style={{ marginTop: 14 }}>shopworld-platform</h3>
-              <p>
-                Python evaluation engine orchestrating Shopify-like workflows. Builds seeded states, traces tool actions, and provides state-based grading reports on correctness, fraud, and policy boundaries.
-              </p>
-              <button 
-                className="btn btn-ghost" 
-                style={{ marginTop: 20, padding: '8px 12px', fontSize: 12, borderRadius: 8 }}
-                onClick={() => { setSubActiveTab('platform'); document.getElementById('subprojects-anchor').scrollIntoView({ behavior: 'smooth' }) }}
-              >
-                Read Spec →
-              </button>
-            </div>
-
+          <div className="grid-2">
             <div className="dev-card">
               <span style={{ fontSize: 32 }}>🤖</span>
               <h3 style={{ marginTop: 14 }}>shopper_sim</h3>
@@ -285,12 +270,6 @@ function OverviewSection({ setTab, subActiveTab, setSubActiveTab, signedUp, setS
             <div className="dashboard-header">
               <div className="dashboard-tabs">
                 <button 
-                  className={`dashboard-tab-btn ${subActiveTab === 'platform' ? 'active' : ''}`}
-                  onClick={() => setSubActiveTab('platform')}
-                >
-                  shopworld-platform
-                </button>
-                <button 
                   className={`dashboard-tab-btn ${subActiveTab === 'shopper_sim' ? 'active' : ''}`}
                   onClick={() => setSubActiveTab('shopper_sim')}
                 >
@@ -309,63 +288,7 @@ function OverviewSection({ setTab, subActiveTab, setSubActiveTab, signedUp, setS
             </div>
 
             <div className="dashboard-body">
-              {subActiveTab === 'platform' && (
-                <div className="dashboard-grid">
-                  <div className="detail-list">
-                    <div className="detail-item">
-                      <div className="detail-icon">⚙</div>
-                      <div className="detail-text">
-                        <h4>Seeded Commerce State</h4>
-                        <p>Initializes a deterministic SQLite sandbox with users, orders, payment options, and inventory levels.</p>
-                      </div>
-                    </div>
-                    <div className="detail-item">
-                      <div className="detail-icon">⚡</div>
-                      <div className="detail-text">
-                        <h4>Shopify-like API Surface</h4>
-                        <p>Allows agents to trigger full administrative transactions (order updates, shipping adjustments, inventory decrements).</p>
-                      </div>
-                    </div>
-                    <div className="detail-item">
-                      <div className="detail-icon">📊</div>
-                      <div className="detail-text">
-                        <h4>Readiness & Trust Score</h4>
-                        <p>Grades completed traces on whether they completed the task, respected policies, and avoided customer overpromises.</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="editor-frame">
-                    <div className="editor-titlebar">
-                      <div className="editor-dots">
-                        <span className="editor-dot red" />
-                        <span className="editor-dot yellow" />
-                        <span className="editor-dot green" />
-                      </div>
-                      <span className="editor-filename">evaluation_run.py</span>
-                      <span className="editor-lang">Python</span>
-                    </div>
-                    <div className="editor-content">
-                      <pre>
-{`<span className="keyword">import</span> shopworld_platform <span className="keyword">as</span> sw
 
-<span className="comment"># 1. Initialize seeded database state</span>
-state = sw.init_state(seed=<span className="number">101</span>)
-
-<span className="comment"># 2. Bind trace recorder to Shopify API client</span>
-client = sw.ShopifyAPIClient(state)
-
-<span className="comment"># 3. Agent executes steps (buying product)</span>
-trace = client.run_agent(agent_fn)
-
-<span className="comment"># 4. Grade resulting database delta</span>
-report = sw.evaluator.grade(trace)
-<span className="keyword">print</span>(<span className="string">f"TGC: {report.tgc_score}"</span>)`}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {subActiveTab === 'shopper_sim' && (
                 <div className="dashboard-grid">
