@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "shopper-sim"
+version = "0.1.0"
+description = "Deterministic, reproducible e-commerce shopper-behaviour simulator for grading single-shot storefronts and multi-step merchant agents."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+authors = [{ name = "Shopper Sim" }]
+dependencies = [
+    "numpy>=2.0",
+]
+
+[project.optional-dependencies]
+# Real-merchant adapters (not needed for the offline engine or tests).
+agents = ["httpx>=0.27"]
+web = ["playwright>=1.44"]
+# FalkorDB backend for the journey graph (authoring path only).
+graph = ["falkordb>=1.0"]
+# Authoring-only tooling (LLM paraphrase/judge generation). These are
+# NEVER imported by the runtime engine.
+authoring = ["falkordb>=1.0"]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[dependency-groups]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[project.scripts]
+shopper-sim = "shopper_sim.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["shopper_sim"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+# Engine determinism guard rails are documented in docs/DETERMINISM.md; a
+# project would add a custom plugin banning `random`, `time.time`,
+# `datetime.now`, and bare `np.random.` inside shopper_sim/engine and the
+# runtime path. The stdlib `random` import is intentionally absent everywhere.
+select = ["E", "F", "I", "W"]

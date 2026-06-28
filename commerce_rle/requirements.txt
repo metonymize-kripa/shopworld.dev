@@ -1,0 +1,5 @@
+pytest>=8
+# optional, for HTTP/MCP serving:
+# fastapi>=0.110
+# uvicorn>=0.29
+# pydantic>=2
