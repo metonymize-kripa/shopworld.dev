@@ -5,6 +5,7 @@ deterministic offline stand-in that reads the structured context block the agent
 embeds in each turn and returns a single JSON tool call — mimicking an LLM's
 next-action decision so the benchmark runs without network access.
 ``AnthropicClient`` is a real adapter used when a model + API key are available.
+``OllamaClient`` is a local-model adapter used when an Ollama server is running.
 """
 
 from __future__ import annotations
@@ -12,6 +13,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import urllib.error
+import urllib.request
 from typing import Any, Dict, List, Protocol
 
 _INTENT_KEYWORDS = [
@@ -145,3 +148,77 @@ class AnthropicClient:
             messages=[{"role": m["role"], "content": m["content"]} for m in convo],
         )
         return resp.content[0].text  # type: ignore[attr-defined]
+
+
+class OllamaClient:
+    """Local LLM adapter for an Ollama chat model.
+
+    Uses Ollama's HTTP API directly so the benchmark does not need an extra
+    Python package. The benchmark entrypoint treats constructor failures as
+    "agent unavailable" and skips cleanly when Ollama is not running or the
+    requested model is not pulled.
+    """
+
+    name = "ollama"
+
+    def __init__(
+        self,
+        model: str = "gemma4:12b-mlx",
+        base_url: str | None = None,
+        temperature: float = 0.0,
+        max_tokens: int = 512,
+        timeout: float = 120.0,
+    ):
+        self.model = model
+        self.base_url = (base_url or os.environ.get("OLLAMA_HOST") or "http://127.0.0.1:11434").rstrip("/")
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.timeout = timeout
+        self._validate_model_available()
+
+    def complete(self, messages: List[Dict[str, str]]) -> str:
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "stream": False,
+            "options": {"temperature": self.temperature, "num_predict": self.max_tokens},
+        }
+        data = self._post_json("/api/chat", payload)
+        message = data.get("message") or {}
+        content = message.get("content")
+        if not isinstance(content, str):
+            raise RuntimeError(f"unexpected Ollama response shape: {data!r}")
+        return content
+
+    def _validate_model_available(self) -> None:
+        data = self._get_json("/api/tags")
+        names = {model.get("name") for model in data.get("models", []) if isinstance(model, dict)}
+        if self.model not in names:
+            available = ", ".join(sorted(str(name) for name in names if name)) or "none"
+            raise RuntimeError(
+                f"Ollama model {self.model!r} is not available at {self.base_url}; "
+                f"available models: {available}. Run `ollama pull {self.model}` or set SHOPWORLD_LLM_MODEL."
+            )
+
+    def _get_json(self, path: str) -> Dict[str, Any]:
+        request = urllib.request.Request(f"{self.base_url}{path}", method="GET")
+        return self._open_json(request)
+
+    def _post_json(self, path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        body = json.dumps(payload).encode("utf-8")
+        request = urllib.request.Request(
+            f"{self.base_url}{path}",
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        return self._open_json(request)
+
+    def _open_json(self, request: urllib.request.Request) -> Dict[str, Any]:
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:  # noqa: S310 - local/user-configured benchmark URL
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.URLError as exc:
+            raise RuntimeError(f"could not reach Ollama at {self.base_url}: {exc}") from exc
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Ollama returned invalid JSON: {exc}") from exc

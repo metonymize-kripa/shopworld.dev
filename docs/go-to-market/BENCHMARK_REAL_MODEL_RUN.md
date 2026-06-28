@@ -6,20 +6,21 @@ _Internal. Last updated: 2026-06-22._
 
 ## Part 1 — Running against a real model (wired, ready)
 
-The runner now accepts a real frontier model as an agent under test.
+The runner now accepts a real local Ollama model as an agent under test.
 
 ```bash
 cd shopworld-platform
-pip install anthropic                       # one-time
-export ANTHROPIC_API_KEY=sk-ant-...
-export SHOPWORLD_LLM_MODEL=claude-sonnet-4-6 # optional; this is the default
+ollama serve                                # if the Ollama service is not already running
+ollama ls                                   # confirm gemma4:12b-mlx is present
+export SHOPWORLD_LLM_MODEL=gemma4:12b-mlx   # optional; this is the default
+export OLLAMA_HOST=http://127.0.0.1:11434   # optional; this is the default
 
-python experiments/run_benchmark.py \
+uv run python experiments/run_benchmark.py \
   --config experiments/configs/mvp_real_llm.yaml \
   --out experiments/reports/results_real_llm.json
 ```
 
-What changed: `experiments/run_benchmark.py` gained an `llm_agent_anthropic` (alias `llm_agent_real`) registry branch that builds `LLMAgent(client=AnthropicClient(model=...))`. It validates the SDK + key up front and skips cleanly (not fatal) if either is missing — so without a key you get a milli-only run and a one-line notice. `experiments/configs/mvp_real_llm.yaml` runs `milli_run` vs `llm_agent_anthropic`. Nothing about the neutral runner or the evaluator changed; the model just replaces the scripted stand-in behind the same `LLMClient` interface.
+What changed: `experiments/run_benchmark.py` gained an `llm_agent_ollama` registry branch (aliases: `llm_agent_local`, `llm_agent_real`) that builds `LLMAgent(client=OllamaClient(model=...))`. The adapter talks to Ollama's local HTTP API, validates that the server is reachable and `gemma4:12b-mlx` is pulled, and skips cleanly (not fatal) if either check fails — so without a running local model you get a milli-only run and a one-line notice. `experiments/configs/mvp_real_llm.yaml` runs `milli_run` vs `llm_agent_ollama`. Nothing about the neutral runner or the evaluator changed; the model just replaces the scripted stand-in behind the same `LLMClient` interface.
 
 This makes a real head-to-head one command. It does **not** by itself make the result publishable — Part 2 does.
 
@@ -58,4 +59,4 @@ While the above is in progress, these hold without a benchmark and belong on the
 
 ## TL;DR
 
-Real-model run is wired (`mvp_real_llm.yaml`, one command). But a publishable claim needs held-out scenarios milli wasn't built on, a fair documented prompt for the model, graded-with-human-review scoring, distributions over point estimates, and a pre-registered hypothesis. Until then, sell the architecture (speed, audit, guards, learnability, cost) — all true today — and show the failure mode as an illustrative example, not a measured score.
+Local real-model run is wired (`mvp_real_llm.yaml`, one `uv run` command). But a publishable claim needs held-out scenarios milli wasn't built on, a fair documented prompt for the model, graded-with-human-review scoring, distributions over point estimates, and a pre-registered hypothesis. Until then, sell the architecture (speed, audit, guards, learnability, cost) — all true today — and show the failure mode as an illustrative example, not a measured score.
