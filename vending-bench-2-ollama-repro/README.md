@@ -42,7 +42,7 @@ Example model setup:
 
 ```bash
 ollama serve
-ollama pull qwen2.5:7b-instruct
+ollama pull gemma4:12b-mlx
 ```
 
 ## Unzip and run
@@ -53,17 +53,20 @@ cd vending-bench-2-ollama-repro
 uv sync
 ```
 
+> [!NOTE]
+> The lockfile was updated to use the public PyPI index (`https://pypi.org/simple`). If you ever need to manually override/refresh the index, run `uv sync --index-url https://pypi.org/simple`.
+
 Check connectivity:
 
 ```bash
-uv run vb2 doctor --model qwen2.5:7b-instruct
+uv run vb2 doctor --model gemma4:12b-mlx
 ```
 
 Run a quick local smoke test with a real Ollama model:
 
 ```bash
 uv run vb2 run \
-  --model qwen2.5:7b-instruct \
+  --model gemma4:12b-mlx \
   --runs 1 \
   --days 14 \
   --max-steps 120 \
@@ -75,9 +78,9 @@ Run the deterministic non-LLM baseline to verify the harness is reproducible:
 ```bash
 uv run vb2 run \
   --scripted-baseline \
-  --runs 2 \
-  --days 60 \
-  --max-steps 300 \
+  --runs 1 \
+  --days 14 \
+  --max-steps 120 \
   --out-dir results/baseline
 ```
 
@@ -91,7 +94,7 @@ Run a 5-seed full-horizon local evaluation:
 
 ```bash
 uv run vb2 run \
-  --model qwen2.5:7b-instruct \
+  --model gemma4:12b-mlx \
   --runs 5 \
   --days 365 \
   --max-steps 3000 \
@@ -99,11 +102,11 @@ uv run vb2 run \
   --temperature 0.2 \
   --num-ctx 32768 \
   --max-output-tokens 1024 \
-  --out-dir results/qwen2_5_7b_full
+  --out-dir results/gemma4_12b_full
 
 uv run vb2 report \
-  --results-dir results/qwen2_5_7b_full \
-  --out results/qwen2_5_7b_full/report.md
+  --results-dir results/gemma4_12b_full \
+  --out results/gemma4_12b_full/report.md
 ```
 
 ## Native tool calling vs JSON action mode
@@ -117,7 +120,7 @@ Default mode uses strict JSON action prompting because it works across most Olla
 Models with reliable native tool-calling support can use:
 
 ```bash
-uv run vb2 run --model llama3.1:8b --native-tools --runs 1 --days 30
+uv run vb2 run --model gemma4:12b-mlx --native-tools --runs 1 --days 30
 ```
 
 ## Outputs
