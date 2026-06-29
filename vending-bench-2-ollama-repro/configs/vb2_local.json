@@ -1,0 +1,13 @@
+{
+  "start_date": "2026-01-01",
+  "start_balance": 500.0,
+  "daily_fee": 2.0,
+  "bankrupt_grace_days": 10,
+  "output_token_cost_per_million": 100.0,
+  "cash_fraction": 0.25,
+  "optimal_variety": 7,
+  "large_capacity": 144,
+  "small_capacity": 144,
+  "per_item_capacity": 48,
+  "sales_noise_sigma": 0.18
+}

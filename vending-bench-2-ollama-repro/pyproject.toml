@@ -1,0 +1,19 @@
+[project]
+name = "vb2-local"
+version = "0.1.0"
+description = "Local Vending-Bench 2 reproduction harness for Ollama models"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{name = "Local reproduction harness"}]
+license = {text = "MIT"}
+dependencies = []
+
+[project.scripts]
+vb2 = "vb2_local.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

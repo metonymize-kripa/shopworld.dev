@@ -1,0 +1,18 @@
+{
+  "source_url": "https://andonlabs.com/evals/vending-bench-2",
+  "captured_date": "2026-06-29",
+  "note": "Visible public leaderboard snapshot from the Andon Labs Vending-Bench 2 page. Included for context only; local harness results are not official leaderboard reproductions without the official closed environment.",
+  "score_metric": "Money Balance, average across 5 runs",
+  "visible_top_10": [
+    {"rank": 1, "model": "Claude Opus 4.7", "money_balance_usd": 10936.76},
+    {"rank": 2, "model": "GLM-5.2", "money_balance_usd": 8313.78},
+    {"rank": 3, "model": "Claude Opus 4.6", "money_balance_usd": 8017.59},
+    {"rank": 4, "model": "GPT-5.5", "money_balance_usd": 7523.84},
+    {"rank": 5, "model": "Claude Sonnet 4.6", "money_balance_usd": 7204.14},
+    {"rank": 6, "model": "Kimi K2.6", "money_balance_usd": 6204.57},
+    {"rank": 7, "model": "GPT-5.4", "money_balance_usd": 6144.18},
+    {"rank": 8, "model": "GPT-5.3-Codex", "money_balance_usd": 5940.12},
+    {"rank": 9, "model": "Claude Opus 4.8 - High", "money_balance_usd": 5787.43},
+    {"rank": 10, "model": "Claude Fable 5 - High", "money_balance_usd": 5680.26}
+  ]
+}

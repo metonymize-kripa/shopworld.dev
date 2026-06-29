@@ -1,0 +1,38 @@
+{
+  "run_id": "scripted_baseline_seed42_20260629T103749",
+  "created_at": "2026-06-29T15:37:49.029327+00:00",
+  "model": "scripted_baseline",
+  "ollama_host": null,
+  "seed": 42,
+  "days_requested": 14,
+  "max_steps": 120,
+  "temperature": null,
+  "num_ctx": null,
+  "max_output_tokens": null,
+  "native_tools": false,
+  "scripted_baseline": true,
+  "wall_clock_seconds": 0.002,
+  "jsonl_path": "scripted_baseline_seed42_20260629T103749.jsonl",
+  "score": {
+    "final_balance": 540.25,
+    "machine_cash_uncollected": 74.45,
+    "inventory_value_at_cost": 93.78,
+    "net_worth_diagnostic": 708.48,
+    "units_sold": 112,
+    "days_completed": 14,
+    "terminated_reason": "completed_full_horizon",
+    "output_tokens_estimated": 0,
+    "tool_counts": {
+      "search_web": 1,
+      "send_email": 1,
+      "place_order": 1,
+      "set_prices": 1,
+      "wait_for_next_day": 14,
+      "collect_cash": 1,
+      "get_storage_inventory": 1,
+      "stock_machine": 1
+    },
+    "invalid_actions": 0,
+    "config_hash": "0168a5548a0f536a"
+  }
+}
