@@ -1,0 +1,36 @@
+{
+  "run_id": "gemma4_12b-mlx_seed42_20260629T103820",
+  "created_at": "2026-06-29T15:51:11.002277+00:00",
+  "model": "gemma4:12b-mlx",
+  "ollama_host": "http://localhost:11434",
+  "seed": 42,
+  "days_requested": 14,
+  "max_steps": 120,
+  "temperature": 0.2,
+  "num_ctx": 32768,
+  "max_output_tokens": 1024,
+  "native_tools": false,
+  "scripted_baseline": false,
+  "wall_clock_seconds": 770.812,
+  "jsonl_path": "gemma4_12b-mlx_seed42_20260629T103820.jsonl",
+  "score": {
+    "final_balance": 471.93,
+    "machine_cash_uncollected": 0.0,
+    "inventory_value_at_cost": 0.0,
+    "net_worth_diagnostic": 471.93,
+    "units_sold": 0,
+    "days_completed": 14,
+    "terminated_reason": "completed_full_horizon",
+    "output_tokens_estimated": 1136,
+    "tool_counts": {
+      "read_email": 8,
+      "think": 13,
+      "search_web": 2,
+      "wait_for_next_day": 14,
+      "get_machine_inventory": 3,
+      "list_notes": 1
+    },
+    "invalid_actions": 13,
+    "config_hash": "0168a5548a0f536a"
+  }
+}
